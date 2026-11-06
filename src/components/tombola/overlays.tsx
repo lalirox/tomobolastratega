@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 
 // ─────────────────────────────────────────────────────────────
@@ -39,29 +39,35 @@ interface WinnerOverlayProps {
   number: number
   round: number
   remaining: number
+  /** Avisa a la pantalla que se cerró (toque o auto) para desmontarlo */
+  onClose: () => void
 }
 
 /**
  * Número ganador a pantalla completa con el logo de Stratega y el
  * saludo de la Posada. Se cierra solo a los ~7 s o al tocar la pantalla.
+ * Solo se monta cuando la tómbola canta un número nuevo: si el anfitrión
+ * manda una alerta durante 'revealed', al terminar NO vuelve a aparecer.
  */
-export function WinnerOverlay({ number, round, remaining }: WinnerOverlayProps) {
-  const [visible, setVisible] = useState(true)
-
-  // Cierre automático (setState solo dentro del callback del timer)
+export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverlayProps) {
+  // Ref siempre fresco para usarlo en el timer sin re-crear el efecto
+  const closeRef = useRef(onClose)
   useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 7000)
+    closeRef.current = onClose
+  })
+
+  // Cierre automático (setState/closure solo dentro del callback del timer)
+  useEffect(() => {
+    const t = setTimeout(() => closeRef.current(), 7000)
     return () => clearTimeout(t)
   }, [])
-
-  if (!visible) return null
 
   return (
     <div
       className="animate-fade-in fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[#070402]/[.97]"
       role="dialog"
       aria-label={`Número ganador: ${number}`}
-      onClick={() => setVisible(false)}
+      onClick={() => closeRef.current()}
     >
       {/* Rayos dorados girando detrás del número */}
       <div className="rays-spin absolute left-1/2 top-1/2 h-[250vmax] w-[250vmax]" aria-hidden="true" />

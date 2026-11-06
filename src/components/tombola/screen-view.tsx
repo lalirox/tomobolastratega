@@ -25,6 +25,8 @@ export function ScreenView() {
   const { state, connected, notice, reset } = useTombola('screen')
   const [muted, setMutedState] = useState(true)
   const [flicker, setFlicker] = useState<number | null>(null)
+  // Número cuyo overlay fullscreen se está mostrando (null = no mostrar)
+  const [winnerNumber, setWinnerNumber] = useState<number | null>(null)
   const prevPhase = useRef(state.phase)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef(state.alertSeq)
@@ -53,14 +55,21 @@ export function ScreenView() {
     }
   }, [state.alertSeq])
 
-  // Redoble al girar y fanfarria al revelar
+  // Redoble al girar y fanfarria al revelar. El overlay del ganador SOLO se
+  // muestra cuando la tómbola canta un número nuevo: si se manda una alerta
+  // durante 'revealed', al terminar la sirena NO vuelve a pantalla completa.
   useEffect(() => {
     if (state.phase !== prevPhase.current) {
+      if (state.phase === 'alert') {
+        queueMicrotask(() => setWinnerNumber(null))
+      } else if (state.phase === 'revealed' && prevPhase.current !== 'alert') {
+        queueMicrotask(() => setWinnerNumber(state.lastNumber))
+      }
       if (state.phase === 'spinning') playRoll()
       if (state.phase === 'revealed') playFanfare()
       prevPhase.current = state.phase
     }
-  }, [state.phase])
+  }, [state.phase, state.lastNumber])
 
   // Números que parpadean mientras gira el tambor
   useEffect(() => {
@@ -101,14 +110,17 @@ export function ScreenView() {
       {/* Sirena de alerta del rancho (la manda el anfitrión desde el celular) */}
       {state.phase === 'alert' && <AlertOverlay />}
 
-      {/* Número ganador a pantalla completa */}
-      {state.phase === 'revealed' && state.lastNumber !== null && (
-        <WinnerOverlay
-          number={state.lastNumber}
-          round={state.drawn.length}
-          remaining={state.remaining}
-        />
-      )}
+      {/* Número ganador a pantalla completa (solo al cantarse un número nuevo) */}
+      {state.phase === 'revealed' &&
+        state.lastNumber !== null &&
+        winnerNumber === state.lastNumber && (
+          <WinnerOverlay
+            number={state.lastNumber}
+            round={state.drawn.length}
+            remaining={state.remaining}
+            onClose={() => setWinnerNumber(null)}
+          />
+        )}
 
       {/* Cabecera compacta: logo + letrero + controles */}
       <header className="relative z-20 overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 shadow-inner">
