@@ -6,6 +6,7 @@ interface DrumProps {
   phase: Phase
   countdown: number
   flicker: number | null
+  lastNumber?: number | null
 }
 
 // Bolas decorativas dentro del tambor (posiciones fijas, en porcentaje)
@@ -26,12 +27,13 @@ const BALLS: Array<{ t: number; l: number; n: number }> = [
   { t: 80, l: 57, n: 31 },
 ]
 
-export function Drum({ phase, countdown, flicker }: DrumProps) {
+export function Drum({ phase, countdown, flicker, lastNumber = null }: DrumProps) {
   const spinning = phase === 'spinning'
   const counting = phase === 'countdown'
+  const revealed = phase === 'revealed' && lastNumber !== null
 
   return (
-    <div className="relative mx-auto w-full max-w-[360px] select-none sm:max-w-[420px]">
+    <div className="relative mx-auto w-[min(88vw,380px)] select-none sm:w-[min(62vw,460px)] lg:w-[min(38vw,54dvh,560px)]">
       {/* Manivela decorativa */}
       <div className="absolute -right-6 top-1/2 z-40 -translate-y-1/2 sm:-right-8">
         <div
@@ -43,11 +45,14 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
         </div>
       </div>
 
-      {/* Tambor */}
+      {/* Tambor (al revelarse crece y brilla en dorado) */}
       <div
-        className="relative aspect-square overflow-hidden rounded-full border-[12px] shadow-[0_18px_40px_rgba(0,0,0,.6),inset_0_0_30px_rgba(0,0,0,.8)] sm:border-[14px]"
+        className={`relative aspect-square overflow-hidden rounded-full border-[12px] transition-all duration-500 sm:border-[14px] ${
+          revealed
+            ? 'scale-[1.04] border-[#c9a227] shadow-[0_0_90px_rgba(201,162,39,.45),0_18px_40px_rgba(0,0,0,.6),inset_0_0_30px_rgba(0,0,0,.8)]'
+            : 'border-[#453319] shadow-[0_18px_40px_rgba(0,0,0,.6),inset_0_0_30px_rgba(0,0,0,.8)]'
+        }`}
         style={{
-          borderColor: '#453319',
           background:
             'radial-gradient(circle at 32% 28%, #43301c 0%, #20150a 58%, #120b04 100%)',
         }}
@@ -93,9 +98,26 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
             <div className="flex h-[46%] w-[46%] items-center justify-center rounded-full border-4 border-[#c9a227] bg-black/65 shadow-[0_0_40px_rgba(201,162,39,.35)]">
               <span
                 key={countdown}
-                className="animate-pop font-rye text-[clamp(48px,14vw,96px)] leading-none text-[#f3d27a] drop-shadow-[0_4px_0_rgba(0,0,0,.7)]"
+                className="animate-pop font-rye text-[clamp(56px,13vw,120px)] leading-none text-[#f3d27a] drop-shadow-[0_4px_0_rgba(0,0,0,.7)]"
               >
                 {countdown}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Medallón gigante con el número ganador */}
+        {revealed && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center">
+            <div className="flex h-[68%] w-[68%] animate-pop flex-col items-center justify-center rounded-full border-4 border-[#c9a227] bg-black/75 shadow-[0_0_70px_rgba(201,162,39,.5),inset_0_0_28px_rgba(201,162,39,.25)]">
+              <span className="font-elite text-[9px] uppercase tracking-[0.35em] text-[#d8b45a] sm:text-xs">
+                Número cantado
+              </span>
+              <span
+                key={lastNumber}
+                className="animate-pop font-rye text-[clamp(56px,9.5vw,128px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_5px_0_rgba(0,0,0,.65)]"
+              >
+                {lastNumber}
               </span>
             </div>
           </div>
@@ -105,7 +127,7 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
         {spinning && (
           <div className="absolute inset-0 z-40 flex items-center justify-center">
             <div className="rounded-lg border-2 border-[#c9a227] bg-black/70 px-5 py-2">
-              <span className="animate-pulse-fast font-rye text-lg tracking-widest text-[#f3d27a] sm:text-2xl">
+              <span className="animate-pulse-fast font-rye text-xl tracking-widest text-[#f3d27a] sm:text-3xl">
                 ¡GIRANDO!
               </span>
             </div>
@@ -123,7 +145,7 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
       {/* Número parpadeante durante el giro */}
       {spinning && flicker !== null && (
         <div className="pointer-events-none absolute left-1/2 top-[8%] z-50 -translate-x-1/2">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#9c8a66] bg-[#f3e6c3] font-elite text-xl font-bold text-[#3b2314] shadow-xl sm:h-20 sm:w-20 sm:text-2xl">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-[#9c8a66] bg-[#f3e6c3] font-elite text-2xl font-bold text-[#3b2314] shadow-xl sm:h-24 sm:w-24 sm:text-3xl">
             {flicker}
           </div>
         </div>

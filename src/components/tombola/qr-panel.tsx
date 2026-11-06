@@ -10,22 +10,25 @@ import {
   Link2,
   QrCode as QrIcon,
   ShieldCheck,
+  Timer,
 } from 'lucide-react'
 
 // Contraseña privada del anfitrión para mostrar el código QR
 const QR_PASSWORD = 'Strategapool_2026'
-const STORAGE_KEY = 'stratega-qr-desbloqueado'
+// El QR se vuelve a bloquear solo después de estos segundos visibles
+const AUTOLOCK_SECONDS = 10
 
 export function QrPanel() {
   const [qrSrc, setQrSrc] = useState<string | null>(null)
   const [url, setUrl] = useState('')
   const [copied, setCopied] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
+  const [secondsLeft, setSecondsLeft] = useState(0)
   const [pw, setPw] = useState('')
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Generar el QR solo cuando está desbloqueado (nadie lo ve antes)
+  // Generar el QR una sola vez (nunca se muestra sin contraseña)
   useEffect(() => {
     let cancelled = false
     const link = `${window.location.origin}/?control`
@@ -49,28 +52,27 @@ export function QrPanel() {
     }
   }, [])
 
-  // Restaurar desbloqueo de la sesión (queueMicrotask evita setState síncrono en efecto)
+  // Auto-bloqueo: cuando está desbloqueado, cuenta regresiva y se oculta solo
   useEffect(() => {
-    queueMicrotask(() => {
-      try {
-        setUnlocked(window.sessionStorage.getItem(STORAGE_KEY) === '1')
-      } catch {
+    if (!unlocked || secondsLeft <= 0) return
+    const t = setTimeout(() => {
+      if (secondsLeft - 1 <= 0) {
         setUnlocked(false)
+        setSecondsLeft(0)
+      } else {
+        setSecondsLeft(secondsLeft - 1)
       }
-    })
-  }, [])
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [unlocked, secondsLeft])
 
   const unlock = (e?: React.FormEvent) => {
     e?.preventDefault()
     if (pw === QR_PASSWORD) {
       setUnlocked(true)
+      setSecondsLeft(AUTOLOCK_SECONDS)
       setError(false)
       setPw('')
-      try {
-        window.sessionStorage.setItem(STORAGE_KEY, '1')
-      } catch {
-        // sin almacenamiento
-      }
     } else {
       setError(true)
       setPw('')
@@ -78,14 +80,10 @@ export function QrPanel() {
     }
   }
 
-  const lockAgain = () => {
+  const lockNow = () => {
     setUnlocked(false)
+    setSecondsLeft(0)
     setError(false)
-    try {
-      window.sessionStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // sin almacenamiento
-    }
   }
 
   const copy = async () => {
@@ -98,17 +96,27 @@ export function QrPanel() {
     }
   }
 
+  const progress = unlocked ? (secondsLeft / AUTOLOCK_SECONDS) * 100 : 0
+
   return (
     <section
       className="parchment relative rounded-md border-2 border-[#4a3a24] p-4 shadow-[0_10px_24px_rgba(0,0,0,.45)]"
       aria-label="Código QR protegido para controlar la tómbola desde el celular"
     >
       <Studs />
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <QrIcon className="h-5 w-5 text-[#5a4626]" aria-hidden="true" />
-        <h2 className="font-rye text-lg text-[#33240f] sm:text-xl">
-          Convierte tu celular en control remoto
-        </h2>
+        <h2 className="font-rye text-lg text-[#33240f] sm:text-xl">Control remoto por QR</h2>
+        {unlocked && (
+          <span
+            className="ml-auto inline-flex items-center gap-1 rounded-full border border-[#8a6a3f] bg-[#efe4c8] px-2 py-0.5 font-elite text-[11px] font-bold text-[#7a5c14]"
+            role="timer"
+            aria-live="off"
+          >
+            <Timer className="h-3 w-3" aria-hidden="true" />
+            Se bloquea en {secondsLeft}s
+          </span>
+        )}
       </div>
 
       {!unlocked ? (
@@ -118,7 +126,7 @@ export function QrPanel() {
             <Lock className="mt-0.5 h-4 w-4 shrink-0 text-[#8b1a1a]" aria-hidden="true" />
             <span>
               El código QR es <strong>privado del anfitrión</strong>. Introduce la contraseña para
-              mostrarlo en pantalla.
+              mostrarlo: se volverá a bloquear <strong>solo</strong> a los 10 segundos.
             </span>
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -150,32 +158,48 @@ export function QrPanel() {
           )}
         </form>
       ) : (
-        // ── QR visible ──
+        // ── QR visible con auto-bloqueo ──
         <div>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <p className="flex items-center gap-1.5 font-elite text-xs font-bold text-[#3e5a2a]">
               <LockKeyholeOpen className="h-3.5 w-3.5" aria-hidden="true" />
-              Desbloqueado · escanea con la cámara de tu celular
+              Visible · escanea con la cámara de tu celular
             </p>
             <button
               type="button"
-              onClick={lockAgain}
+              onClick={lockNow}
               className="inline-flex items-center gap-1.5 rounded-md border border-[#4a3a24] bg-[#e0d5b8] px-2.5 py-1 font-elite text-xs font-bold text-[#5a4626] shadow transition hover:bg-[#d4c8a8] active:scale-95"
             >
               <Lock className="h-3 w-3" aria-hidden="true" />
-              Ocultar de nuevo
+              Bloquear ahora
             </button>
           </div>
+
+          {/* Barra del auto-bloqueo (10 s) */}
+          <div
+            className="mb-3 h-1.5 overflow-hidden rounded-full bg-[#d4c8a8]"
+            role="progressbar"
+            aria-label="Tiempo restante para bloquear el QR"
+            aria-valuemin={0}
+            aria-valuemax={AUTOLOCK_SECONDS}
+            aria-valuenow={secondsLeft}
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#8b1a1a] to-[#c9a227] transition-all duration-1000 ease-linear"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="shrink-0 rounded-md border-4 border-double border-[#4a3a24] bg-[#f0e8d2] p-1.5 shadow-inner">
               {qrSrc ? (
                 <img
                   src={qrSrc}
                   alt="Código QR para abrir el control remoto de la tómbola"
-                  className="h-32 w-32 sm:h-40 sm:w-40"
+                  className="h-28 w-28 sm:h-36 sm:w-36"
                 />
               ) : (
-                <div className="flex h-32 w-32 items-center justify-center sm:h-40 sm:w-40">
+                <div className="flex h-28 w-28 items-center justify-center sm:h-36 sm:w-36">
                   <span className="font-elite text-xs text-[#8a6a3f]">Generando QR...</span>
                 </div>
               )}
@@ -200,6 +224,9 @@ export function QrPanel() {
                   </>
                 )}
               </button>
+              <p className="font-elite text-[10px] leading-snug text-[#8a6a3f]">
+                Al cumplirse el tiempo, el QR se oculta solo para que nadie más pueda escanearlo.
+              </p>
             </div>
           </div>
         </div>
