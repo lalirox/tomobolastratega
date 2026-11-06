@@ -282,4 +282,74 @@
 }
 
 
-/* western theme v3 · layout con panel lateral + qr autobloqueo */
+/* western theme v4 · alerta calamar + ganador fullscreen */
+
+/* ── Alerta estilo Juego del Calamar: parpadeo rojo/rosa ── */
+@keyframes alert-flash-kf {
+  0%,
+  100% {
+    background-color: #12030a;
+  }
+  45% {
+    background-color: #8f0f3c;
+  }
+  70% {
+    background-color: #5c0822;
+  }
+}
+.alert-flash {
+  background-color: #12030a;
+  animation: alert-flash-kf 0.72s ease-in-out infinite;
+}
+
+/* ── Rayos dorados girando detrás del número ganador ── */
+@keyframes rays-kf {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+.rays-spin {
+  background: repeating-conic-gradient(
+    rgba(201, 162, 39, 0.1) 0deg 7deg,
+    transparent 7deg 16deg
+  );
+  border-radius: 9999px;
+  animation: rays-kf 26s linear infinite;
+}
+
+/* ── Entrada dramática del número ganador ── */
+@keyframes winner-pop-kf {
+  0% {
+    transform: scale(0.15) rotate(-10deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.15) rotate(2deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.97) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+.animate-winner-pop {
+  animation: winner-pop-kf 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes fade-in-kf {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in-kf 0.25s ease-out both;
+}

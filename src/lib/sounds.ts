@@ -78,6 +78,43 @@ export function playFanfare() {
   beep(1046.5, 0.5, 'square', 0.05, notes.length * 0.13)
 }
 
+// Sirena de ALERTA estilo Juego del Calamar: barrido sube-baja de 3 ciclos
+export function playSiren() {
+  if (!ctx || muted) return
+  try {
+    const t0 = ctx.currentTime
+    const cycles = 3
+    const cycle = 0.85
+    const osc = ctx.createOscillator()
+    const osc2 = ctx.createOscillator()
+    const g = ctx.createGain()
+    osc.type = 'sawtooth'
+    osc2.type = 'square'
+    for (let i = 0; i < cycles; i++) {
+      const base = t0 + i * cycle
+      osc.frequency.setValueAtTime(480, base)
+      osc.frequency.linearRampToValueAtTime(940, base + cycle * 0.5)
+      osc.frequency.linearRampToValueAtTime(480, base + cycle)
+      osc2.frequency.setValueAtTime(240, base)
+      osc2.frequency.linearRampToValueAtTime(470, base + cycle * 0.5)
+      osc2.frequency.linearRampToValueAtTime(240, base + cycle)
+    }
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.exponentialRampToValueAtTime(0.14, t0 + 0.06)
+    g.gain.setValueAtTime(0.14, t0 + cycles * cycle - 0.3)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + cycles * cycle)
+    osc.connect(g)
+    osc2.connect(g)
+    g.connect(ctx.destination)
+    osc.start(t0)
+    osc2.start(t0)
+    osc.stop(t0 + cycles * cycle + 0.05)
+    osc2.stop(t0 + cycles * cycle + 0.05)
+  } catch {
+    // silencio si falla
+  }
+}
+
 // Clic del botón rojo
 export function playClick() {
   beep(140, 0.09, 'sawtooth', 0.05)

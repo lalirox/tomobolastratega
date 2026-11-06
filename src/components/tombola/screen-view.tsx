@@ -17,8 +17,9 @@ import { useTombola } from '@/hooks/use-tombola'
 import { Drum } from '@/components/tombola/drum'
 import { QrPanel, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
+import { AlertOverlay, WinnerOverlay } from '@/components/tombola/overlays'
 import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
-import { isMuted, loadMutePreference, playFanfare, playRoll, playTick, primeAudio, setMuted } from '@/lib/sounds'
+import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
 
 export function ScreenView() {
   const { state, connected, notice, reset } = useTombola('screen')
@@ -43,9 +44,10 @@ export function ScreenView() {
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown])
 
-  // Redoble al girar y fanfarria al revelar
+  // Sirena al alertar, redoble al girar y fanfarria al revelar
   useEffect(() => {
     if (state.phase !== prevPhase.current) {
+      if (state.phase === 'alert') playSiren()
       if (state.phase === 'spinning') playRoll()
       if (state.phase === 'revealed') playFanfare()
       prevPhase.current = state.phase
@@ -86,6 +88,18 @@ export function ScreenView() {
         >
           {notice}
         </div>
+      )}
+
+      {/* Alerta estilo Juego del Calamar antes del conteo */}
+      {state.phase === 'alert' && <AlertOverlay />}
+
+      {/* Número ganador a pantalla completa */}
+      {state.phase === 'revealed' && state.lastNumber !== null && (
+        <WinnerOverlay
+          number={state.lastNumber}
+          round={state.drawn.length}
+          remaining={state.remaining}
+        />
       )}
 
       {/* Cabecera compacta: logo + letrero + controles */}
@@ -266,6 +280,13 @@ export function ScreenView() {
                 </p>
                 <p className="font-elite text-sm text-[#5a3a1c]">
                   Fue el número <strong>#{state.drawn.length}</strong> de la ronda
+                </p>
+              </>
+            ) : state.phase === 'alert' ? (
+              <>
+                <p className="font-rye text-3xl text-[#8b1a1a] sm:text-4xl">⚠ ¡Alerta! ⚠</p>
+                <p className="mt-1 font-elite text-sm text-[#5a3a1c]">
+                  La nueva rifa está por comenzar...
                 </p>
               </>
             ) : state.phase === 'spinning' ? (

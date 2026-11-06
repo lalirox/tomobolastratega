@@ -1,6 +1,6 @@
 // Tipos compartidos del juego de la tómbola
 
-export type Phase = 'idle' | 'countdown' | 'spinning' | 'revealed'
+export type Phase = 'idle' | 'alert' | 'countdown' | 'spinning' | 'revealed'
 
 export interface GameState {
   phase: Phase

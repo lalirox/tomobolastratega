@@ -9,8 +9,10 @@ import { Server } from 'socket.io'
 const TOTAL_NUMBERS = 100
 const COUNTDOWN_FROM = 5
 const SPIN_MS = 1900
+// Duración de la sirena de alerta antes del conteo (estilo Juego del Calamar)
+const ALERT_MS = 3500
 
-type Phase = 'idle' | 'countdown' | 'spinning' | 'revealed'
+type Phase = 'idle' | 'alert' | 'countdown' | 'spinning' | 'revealed'
 
 interface GameState {
   phase: Phase
@@ -32,6 +34,7 @@ const state: GameState = {
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let spinTimer: ReturnType<typeof setTimeout> | null = null
+let alertTimer: ReturnType<typeof setTimeout> | null = null
 
 function snapshot(): GameState {
   return {
@@ -57,18 +60,35 @@ function clearTimers() {
     clearTimeout(spinTimer)
     spinTimer = null
   }
+  if (alertTimer) {
+    clearTimeout(alertTimer)
+    alertTimer = null
+  }
 }
 
 function startDraw(): 'ok' | 'busy' | 'empty' {
   // Se permite lanzar cuando está listo o cuando ya se reveló el número anterior
-  if (state.phase === 'countdown' || state.phase === 'spinning') return 'busy'
+  if (
+    state.phase === 'alert' ||
+    state.phase === 'countdown' ||
+    state.phase === 'spinning'
+  ) {
+    return 'busy'
+  }
   if (state.remaining <= 0) return 'empty'
 
-  state.phase = 'countdown'
-  state.countdown = COUNTDOWN_FROM
+  // ── Fase de ALERTA: sirena para llamar la atención de todos ──
+  state.phase = 'alert'
   broadcast()
+  console.log('ALERTA: la nueva rifa está por comenzar')
 
-  countdownTimer = setInterval(() => {
+  alertTimer = setTimeout(() => {
+    // ── Inicia la cuenta atrás 5 → 0 ──
+    state.phase = 'countdown'
+    state.countdown = COUNTDOWN_FROM
+    broadcast()
+
+    countdownTimer = setInterval(() => {
     state.countdown -= 1
     if (state.countdown >= 0) {
       // Muestra 5, 4, 3, 2, 1, 0 — el 0 permanece un segundo
@@ -97,7 +117,8 @@ function startDraw(): 'ok' | 'busy' | 'empty' {
         console.log(`Número cantado: ${picked} | quedan ${state.remaining}`)
       }, SPIN_MS)
     }
-  }, 1000)
+    }, 1000)
+  }, ALERT_MS)
 
   return 'ok'
 }

@@ -16,7 +16,7 @@ import {
 import { useTombola } from '@/hooks/use-tombola'
 import { Studs } from '@/components/tombola/qr-panel'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
-import { playClick, playFanfare, playRoll, playTick, primeAudio } from '@/lib/sounds'
+import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
   const { state, connected, notice, press, reset } = useTombola('controller')
@@ -45,6 +45,14 @@ export function ControllerView() {
 
   useEffect(() => {
     if (state.phase !== prevPhase.current) {
+      if (state.phase === 'alert') {
+        playSiren()
+        try {
+          navigator.vibrate?.([250, 120, 250, 120, 250])
+        } catch {
+          // sin vibración
+        }
+      }
       if (state.phase === 'spinning') {
         playRoll()
         try {
@@ -65,7 +73,8 @@ export function ControllerView() {
     }
   }, [state.phase])
 
-  const busy = state.phase === 'countdown' || state.phase === 'spinning'
+  const busy =
+    state.phase === 'alert' || state.phase === 'countdown' || state.phase === 'spinning'
   const empty = state.remaining <= 0
   const disabled = !connected || busy || empty
 
@@ -134,7 +143,19 @@ export function ControllerView() {
         aria-live="polite"
       >
         <Studs />
-        {state.phase === 'countdown' ? (
+        {state.phase === 'alert' ? (
+          <>
+            <p className="font-elite text-xs uppercase tracking-[0.25em] text-[#8b1a1a]">
+              Sirena activada
+            </p>
+            <p className="animate-pulse-fast font-rye text-4xl leading-tight text-[#8b1a1a]">
+              ⚠ ¡Alerta! ⚠
+            </p>
+            <p className="mt-1 font-elite text-sm text-[#5a3a1c]">
+              La rifa va a comenzar, agarra tu cartón
+            </p>
+          </>
+        ) : state.phase === 'countdown' ? (
           <>
             <p className="font-elite text-xs uppercase tracking-[0.25em] text-[#8b1a1a]">Cantando en</p>
             <p key={state.countdown} className="animate-pop font-rye text-7xl leading-tight text-[#8b1a1a]">
@@ -191,7 +212,9 @@ export function ControllerView() {
           >
             <span className="pointer-events-none absolute left-[18%] top-[12%] h-6 w-10 rounded-full bg-white/25 blur-[6px]" aria-hidden="true" />
             {busy
-              ? 'EN MARCHA'
+              ? state.phase === 'alert'
+                ? '⚠ ALERTA ⚠'
+                : 'EN MARCHA'
               : empty
                 ? 'VACÍO'
                 : state.phase === 'revealed'
