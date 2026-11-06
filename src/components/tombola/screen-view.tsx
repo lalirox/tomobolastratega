@@ -17,7 +17,7 @@ import { useTombola } from '@/hooks/use-tombola'
 import { Drum } from '@/components/tombola/drum'
 import { QrPanel, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
-import { AlertOverlay, WinnerOverlay } from '@/components/tombola/overlays'
+import { AlertOverlay, BrandingOverlay, WinnerOverlay } from '@/components/tombola/overlays'
 import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
 import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
 
@@ -27,6 +27,8 @@ export function ScreenView() {
   const [flicker, setFlicker] = useState<number | null>(null)
   // Número cuyo overlay fullscreen se está mostrando (null = no mostrar)
   const [winnerNumber, setWinnerNumber] = useState<number | null>(null)
+  // Pantalla de marca POSADA STRATEGA CONSULTORES 2026 (tras los 20 s del ganador)
+  const [branding, setBranding] = useState(false)
   const prevPhase = useRef(state.phase)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef(state.alertSeq)
@@ -58,12 +60,19 @@ export function ScreenView() {
   // Redoble al girar y fanfarria al revelar. El overlay del ganador SOLO se
   // muestra cuando la tómbola canta un número nuevo: si se manda una alerta
   // durante 'revealed', al terminar la sirena NO vuelve a pantalla completa.
+  // Al cerrarse el ganador (20 s o toque) entra la pantalla de marca, que se
+  // quita cuando se manda una alerta o un número nuevo.
   useEffect(() => {
     if (state.phase !== prevPhase.current) {
-      if (state.phase === 'alert') {
-        queueMicrotask(() => setWinnerNumber(null))
-      } else if (state.phase === 'revealed' && prevPhase.current !== 'alert') {
-        queueMicrotask(() => setWinnerNumber(state.lastNumber))
+      if (state.phase === 'revealed') {
+        if (prevPhase.current !== 'alert') {
+          queueMicrotask(() => setWinnerNumber(state.lastNumber))
+        }
+      } else {
+        queueMicrotask(() => {
+          setWinnerNumber(null)
+          setBranding(false)
+        })
       }
       if (state.phase === 'spinning') playRoll()
       if (state.phase === 'revealed') playFanfare()
@@ -118,9 +127,15 @@ export function ScreenView() {
             number={state.lastNumber}
             round={state.drawn.length}
             remaining={state.remaining}
-            onClose={() => setWinnerNumber(null)}
+            onClose={() => {
+              setWinnerNumber(null)
+              setBranding(true)
+            }}
           />
         )}
+
+      {/* Pantalla de marca: permanece hasta la próxima alerta o número */}
+      {branding && state.phase === 'revealed' && <BrandingOverlay />}
 
       {/* Cabecera compacta: logo + letrero + controles */}
       <header className="relative z-20 overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 shadow-inner">

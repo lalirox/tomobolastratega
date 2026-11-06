@@ -5,8 +5,9 @@ import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 
 // ─────────────────────────────────────────────────────────────
 // Overlays de pantalla completa:
-//  · AlertOverlay  → sirena visual del rancho (botón del celular)
-//  · WinnerOverlay → número ganador ocupando toda la pantalla
+//  · AlertOverlay     → sirena visual del rancho (botón del celular)
+//  · WinnerOverlay    → número ganador ocupando toda la pantalla (20 s)
+//  · BrandingOverlay  → POSADA STRATEGA CONSULTORES 2026 (resting screen)
 // ─────────────────────────────────────────────────────────────
 
 /** Alerta a pantalla completa con parpadeo rojo/dorado del rancho (fase 'alert') */
@@ -45,9 +46,11 @@ interface WinnerOverlayProps {
 
 /**
  * Número ganador a pantalla completa con el logo de Stratega y el
- * saludo de la Posada. Se cierra solo a los ~7 s o al tocar la pantalla.
- * Solo se monta cuando la tómbola canta un número nuevo: si el anfitrión
- * manda una alerta durante 'revealed', al terminar NO vuelve a aparecer.
+ * saludo de la Posada. Se queda 20 s y luego pasa a la pantalla de
+ * marca (BrandingOverlay); también se puede adelantar con un toque.
+ * Solo se monta cuando la tómbola canta un número nuevo: si el
+ * anfitrión manda una alerta durante 'revealed', al terminar NO
+ * vuelve a aparecer.
  */
 export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverlayProps) {
   // Ref siempre fresco para usarlo en el timer sin re-crear el efecto
@@ -56,9 +59,9 @@ export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverl
     closeRef.current = onClose
   })
 
-  // Cierre automático (setState/closure solo dentro del callback del timer)
+  // Cierre automático a los 20 s (closure solo dentro del callback del timer)
   useEffect(() => {
-    const t = setTimeout(() => closeRef.current(), 7000)
+    const t = setTimeout(() => closeRef.current(), 20000)
     return () => clearTimeout(t)
   }, [])
 
@@ -100,6 +103,46 @@ export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverl
         <p className="mt-2 font-elite text-[10px] tracking-[0.3em] text-white/45 sm:text-xs">
           TOCA LA PANTALLA PARA CONTINUAR
         </p>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Pantalla de marca: tras los 20 s del número ganador, la pantalla grande
+ * se convierte en el marco de la Posada. No se quita con toques: solo la
+ * sustituyen una alerta (sirena) o un nuevo número cantado.
+ */
+export function BrandingOverlay() {
+  return (
+    <div
+      className="animate-fade-in fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#070402]"
+      role="status"
+      aria-label="Posada Stratega Consultores 2026"
+    >
+      {/* Rayos dorados girando de fondo */}
+      <div className="rays-spin absolute left-1/2 top-1/2 h-[250vmax] w-[250vmax]" aria-hidden="true" />
+      {/* Viñeta oscura para dar profundidad */}
+      <div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,.8)_82%)]"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex flex-col items-center gap-1 text-center sm:gap-2">
+        <StrategaLogo className="h-28 w-28 animate-winner-pop object-contain drop-shadow-[0_0_44px_rgba(232,200,119,.55)] sm:h-44 sm:w-44" />
+        <p className="mt-2 font-elite text-[clamp(12px,2vw,24px)] font-bold uppercase tracking-[0.5em] text-[#d8b45a] drop-shadow-[0_0_18px_rgba(201,162,39,.5)]">
+          ★ La gran noche del rancho ★
+        </p>
+        <p className="animate-winner-pop font-rye text-[clamp(52px,11vw,170px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_0_60px_rgba(201,162,39,.5)]">
+          POSADA
+        </p>
+        <p className="animate-pop font-rye text-[clamp(24px,5.2vw,84px)] leading-tight text-[#e8c877] drop-shadow-[0_0_30px_rgba(201,162,39,.4)]">
+          STRATEGA CONSULTORES
+        </p>
+        <p className="animate-winner-pop font-rye text-[clamp(52px,11vw,170px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_0_60px_rgba(201,162,39,.5)]">
+          2026
+        </p>
+        <BrandY className="mt-3 h-10 w-10 opacity-90 sm:h-14 sm:w-14" />
       </div>
     </div>
   )
