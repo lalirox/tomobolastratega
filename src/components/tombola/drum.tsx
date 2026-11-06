@@ -47,9 +47,9 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
       <div
         className="relative aspect-square overflow-hidden rounded-full border-[12px] shadow-[0_18px_40px_rgba(0,0,0,.6),inset_0_0_30px_rgba(0,0,0,.8)] sm:border-[14px]"
         style={{
-          borderColor: '#7a4a20',
+          borderColor: '#453319',
           background:
-            'radial-gradient(circle at 32% 28%, #4a3520 0%, #241608 58%, #140c05 100%)',
+            'radial-gradient(circle at 32% 28%, #43301c 0%, #20150a 58%, #120b04 100%)',
         }}
         role="img"
         aria-label="Tambor de la tómbola girando con bolas de números"
@@ -67,8 +67,8 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
                 left: `${b.l}%`,
                 width: '13%',
                 height: '13%',
-                background: 'radial-gradient(circle at 35% 30%, #fffdf5, #d8cdb4 75%)',
-                borderColor: '#9c8a66',
+                background: 'radial-gradient(circle at 35% 30%, #fffef8, #ddd2b4 75%)',
+                borderColor: '#9a8a62',
                 fontSize: 'clamp(9px, 2.2vw, 15px)',
               }}
             >
@@ -85,7 +85,7 @@ export function Drum({ phase, countdown, flicker }: DrumProps) {
         <div className="absolute left-[14%] top-[10%] h-[22%] w-[30%] rounded-full bg-white/15 blur-md" />
 
         {/* Eje central */}
-        <div className="absolute left-1/2 top-1/2 z-30 h-[9%] w-[9%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#5d421c] bg-gradient-to-br from-[#e0bd6a] to-[#8a6420] shadow" />
+        <div className="absolute left-1/2 top-1/2 z-30 h-[9%] w-[9%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#3d2c12] bg-gradient-to-br from-[#d8c48c] to-[#6e5a2e] shadow" />
 
         {/* Cuenta atrás sobre el tambor */}
         {counting && (

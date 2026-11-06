@@ -138,6 +138,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('press', () => {
+    console.log(`PRESS recibido de ${socket.id} (fase actual: ${state.phase})`)
     const result = startDraw()
     if (result === 'busy') socket.emit('busy')
     if (result === 'empty') socket.emit('empty')

@@ -135,21 +135,21 @@
   font-family: "Special Elite", "Courier New", monospace;
 }
 
-/* Fondo de madera vieja */
+/* Fondo de madera vieja · noche en el rancho */
 .wood-bg {
-  background-color: #241608;
+  background-color: #14100a;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.22) 0 3px, transparent 3px 96px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 9px),
-    linear-gradient(180deg, #33220f 0%, #241608 60%, #1a0f06 100%);
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 3px, transparent 3px 96px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #221b10 0%, #171208 55%, #0e0a05 100%);
 }
 
-/* Pergamino / cartel de "se busca" */
+/* Pergamino hueso · papel del rancho */
 .parchment {
-  background-color: #ecd9a8;
+  background-color: #e8dfc6;
   background-image:
-    radial-gradient(ellipse at 18% 8%, rgba(255, 250, 230, 0.65), transparent 55%),
-    radial-gradient(ellipse at 85% 92%, rgba(120, 80, 30, 0.18), transparent 60%);
+    radial-gradient(ellipse at 18% 8%, rgba(255, 252, 240, 0.6), transparent 55%),
+    radial-gradient(ellipse at 85% 92%, rgba(105, 82, 40, 0.16), transparent 60%);
 }
 
 /* Tachuelas de las esquinas de los carteles */
@@ -241,22 +241,44 @@
   animation: pulse-ring-kf 1.4s ease-out infinite;
 }
 
+@keyframes shake-kf {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}
+.animate-shake {
+  animation: shake-kf 0.4s ease-in-out both;
+}
+
 /* Scrollbar western para el historial */
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #8a6420 #e7d7ab;
+  scrollbar-color: #8a7448 #ddd2b4;
 }
 .custom-scroll::-webkit-scrollbar {
   width: 10px;
 }
 .custom-scroll::-webkit-scrollbar-track {
-  background: #e7d7ab;
+  background: #ddd2b4;
   border-radius: 8px;
 }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #a3742e, #6b4423);
+  background: linear-gradient(180deg, #8a7448, #4a3a24);
   border-radius: 8px;
-  border: 2px solid #e7d7ab;
+  border: 2px solid #ddd2b4;
 }
 
 

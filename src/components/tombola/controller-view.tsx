@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
 import { Studs } from '@/components/tombola/qr-panel'
+import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { playClick, playFanfare, playRoll, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
@@ -92,12 +93,19 @@ export function ControllerView() {
       )}
 
       <header className="mb-5 text-center">
-        <p className="flex items-center justify-center gap-2 font-elite text-xs tracking-[0.3em] text-[#c9a97a]">
+        <div className="flex items-center justify-center gap-3">
+          <StrategaLogo className="h-12 w-12 object-contain sm:h-14 sm:w-14" />
+          <BrandY className="h-9 w-9 drop-shadow-[0_2px_6px_rgba(0,0,0,.8)] sm:h-11 sm:w-11" />
+        </div>
+        <p className="mt-1.5 flex items-center justify-center gap-2 font-elite text-xs tracking-[0.3em] text-[#a8987a]">
           <Smartphone className="h-4 w-4" aria-hidden="true" /> CONTROL REMOTO
         </p>
-        <h1 className="font-rye text-2xl text-[#f3d27a] drop-shadow-[0_3px_0_rgba(0,0,0,.8)] sm:text-3xl">
-          ★ TÓMBOLA DEL OESTE ★
+        <h1 className="font-rye text-2xl text-[#e6d9b8] drop-shadow-[0_3px_0_rgba(0,0,0,.8)] sm:text-3xl">
+          RANCHO YELLOWSTONE
         </h1>
+        <p className="font-elite text-[10px] font-bold tracking-[0.3em] text-[#d43a2a] sm:text-xs">
+          ESTANCIA STRATEGA · TÓMBOLA DEL RANCHO
+        </p>
       </header>
 
       {/* Estado de conexión */}
@@ -265,8 +273,8 @@ export function ControllerView() {
       </div>
 
       <footer className="mt-auto pt-8 text-center">
-        <p className="font-elite text-[11px] tracking-widest text-[#8a6a3f]">
-          MANTÉN ESTA PANTALLA ABIERTA PARA CONTROLAR LA TÓMBOLA
+        <p className="font-elite text-[11px] tracking-widest text-[#8a7a58]">
+          ESTANCIA STRATEGA · MANTÉN ESTA PANTALLA ABIERTA PARA CONTROLAR LA TÓMBOLA
         </p>
       </footer>
     </div>

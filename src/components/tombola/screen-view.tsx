@@ -17,6 +17,7 @@ import { useTombola } from '@/hooks/use-tombola'
 import { Drum } from '@/components/tombola/drum'
 import { QrPanel, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
+import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
 import { isMuted, loadMutePreference, playFanfare, playRoll, playTick, primeAudio, setMuted } from '@/lib/sounds'
 
 export function ScreenView() {
@@ -86,14 +87,27 @@ export function ScreenView() {
         </div>
       )}
 
-      {/* Letrero del saloon */}
-      <header className="border-b-4 border-[#5a3a1c] bg-[#1c1208]/80 px-4 py-4 text-center shadow-inner">
-        <h1 className="font-rye text-2xl tracking-wide text-[#f3d27a] drop-shadow-[0_3px_0_rgba(0,0,0,.8)] sm:text-4xl">
-          ★ TÓMBOLA DEL VIEJO OESTE ★
-        </h1>
-        <p className="mt-1 font-elite text-xs tracking-[0.25em] text-[#c9a97a] sm:text-sm">
-          — SALOON · RIFAS JUSTAS DESDE 1885 —
-        </p>
+      {/* Letrero del rancho (concepto Yellowstone) */}
+      <header className="relative overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 px-4 py-4 shadow-inner">
+        <div className="relative z-10 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-5">
+          <StrategaLogo className="h-16 w-16 object-contain sm:h-20 sm:w-20" />
+          <div className="hidden h-14 w-px bg-[#4a3a24] sm:block" aria-hidden="true" />
+          <div className="flex items-center gap-3">
+            <BrandY className="h-12 w-12 shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.8)] sm:h-16 sm:w-16" />
+            <div className="text-left">
+              <h1 className="font-rye text-xl tracking-wide text-[#e6d9b8] drop-shadow-[0_3px_0_rgba(0,0,0,.8)] sm:text-3xl">
+                TÓMBOLA DEL RANCHO
+              </h1>
+              <p className="font-elite text-sm font-bold tracking-[0.35em] text-[#d43a2a] sm:text-lg">
+                YELLOWSTONE
+              </p>
+              <p className="font-elite text-[10px] tracking-[0.25em] text-[#a8987a] sm:text-xs">
+                ESTANCIA STRATEGA · MONTANA · RIFAS JUSTAS DESDE 1886
+              </p>
+            </div>
+          </div>
+        </div>
+        <MountainRidge className="pointer-events-none absolute bottom-0 left-0 h-9 w-full opacity-70" />
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-6">
@@ -225,7 +239,7 @@ export function ScreenView() {
             <section className="rounded-md border-2 border-[#6b4423] bg-[#1c1208]/85 p-4 shadow-[0_10px_24px_rgba(0,0,0,.45)]">
               <h2 className="mb-3 flex items-center gap-2 font-rye text-lg text-[#f3d27a]">
                 <Sparkles className="h-5 w-5 text-[#c9a227]" aria-hidden="true" />
-                Marcador del saloon
+                Marcador del rancho
               </h2>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-md border border-[#5a3a1c] bg-[#241608] p-3">
@@ -283,8 +297,8 @@ export function ScreenView() {
       </main>
 
       <footer className="mt-auto border-t-4 border-[#5a3a1c] bg-[#1c1208]/80 py-3 text-center">
-        <p className="font-elite text-xs tracking-widest text-[#c9a97a]">
-          ★ TÓMBOLA DEL VIEJO OESTE · JUEGO LIMPIO · SIN TRAMPA ★
+        <p className="font-elite text-xs tracking-widest text-[#a8987a]">
+          ★ RANCHO YELLOWSTONE · TÓMBOLA STRATEGA · JUEGO LIMPIO · SIN TRAMPA ★
         </p>
       </footer>
     </div>

@@ -38,7 +38,7 @@ export function HistoryGrid({ drawn, lastNumber }: HistoryGridProps) {
         </p>
       </div>
 
-      <div className="custom-scroll max-h-[300px] overflow-y-auto rounded-sm border border-[#c9b487] bg-[#f3e6c3]/60 p-2 lg:max-h-[340px]">
+      <div className="custom-scroll max-h-[300px] overflow-y-auto rounded-sm border border-[#bfae86] bg-[#f0e8d2]/60 p-2 lg:max-h-[340px]">
         <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
           {Array.from({ length: 100 }, (_, i) => i + 1).map((n) => {
             const out = drawnSet.has(n)
@@ -49,7 +49,7 @@ export function HistoryGrid({ drawn, lastNumber }: HistoryGridProps) {
                 className={`relative flex aspect-square items-center justify-center rounded-sm border font-elite text-sm font-bold transition-all duration-300 sm:text-base ${
                   out
                     ? 'border-[#7a5c14] bg-gradient-to-b from-[#e0bd6a] to-[#c9a227] text-[#2b1a0c] shadow-[inset_0_-2px_4px_rgba(0,0,0,.2)]'
-                    : 'border-[#c9b487] bg-[#e7d7ab]/70 text-[#8a6a3f]'
+                    : 'border-[#bfae86] bg-[#ddd2b4]/70 text-[#8a6a3f]'
                 } ${isLast ? 'pulse-ring' : ''}`}
               >
                 {n}
