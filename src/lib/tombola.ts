@@ -1,0 +1,23 @@
+// Tipos compartidos del juego de la tómbola
+
+export type Phase = 'idle' | 'countdown' | 'spinning' | 'revealed'
+
+export interface GameState {
+  phase: Phase
+  countdown: number
+  drawn: number[]
+  lastNumber: number | null
+  remaining: number
+  total: number
+}
+
+export const INITIAL_STATE: GameState = {
+  phase: 'idle',
+  countdown: 0,
+  drawn: [],
+  lastNumber: null,
+  remaining: 100,
+  total: 100,
+}
+
+export type Role = 'screen' | 'controller'
