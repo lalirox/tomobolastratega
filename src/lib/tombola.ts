@@ -9,6 +9,8 @@ export interface GameState {
   lastNumber: number | null
   remaining: number
   total: number
+  /** Contador de alertas enviadas: al cambiar, suena la sirena de nuevo */
+  alertSeq: number
 }
 
 export const INITIAL_STATE: GameState = {
@@ -18,6 +20,7 @@ export const INITIAL_STATE: GameState = {
   lastNumber: null,
   remaining: 100,
   total: 100,
+  alertSeq: 0,
 }
 
 export type Role = 'screen' | 'controller'

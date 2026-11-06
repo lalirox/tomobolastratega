@@ -53,9 +53,14 @@ export function useTombola(role: Role) {
     socketRef.current?.emit('press')
   }, [])
 
+  // Manda la sirena de alerta a todas las pantallas (botón del anfitrión)
+  const sendAlert = useCallback(() => {
+    socketRef.current?.emit('alert')
+  }, [])
+
   const reset = useCallback(() => {
     socketRef.current?.emit('reset')
   }, [])
 
-  return { state, connected, notice, press, reset }
+  return { state, connected, notice, press, sendAlert, reset }
 }

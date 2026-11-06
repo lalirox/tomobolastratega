@@ -78,7 +78,7 @@ export function playFanfare() {
   beep(1046.5, 0.5, 'square', 0.05, notes.length * 0.13)
 }
 
-// Sirena de ALERTA estilo Juego del Calamar: barrido sube-baja de 3 ciclos
+// Sirena de alerta del rancho: barrido sube-baja de 3 ciclos
 export function playSiren() {
   if (!ctx || muted) return
   try {

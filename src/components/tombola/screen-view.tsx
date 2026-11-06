@@ -27,6 +27,7 @@ export function ScreenView() {
   const [flicker, setFlicker] = useState<number | null>(null)
   const prevPhase = useRef(state.phase)
   const prevCountdown = useRef(state.countdown)
+  const prevAlertSeq = useRef(state.alertSeq)
 
   // Audio: se activa tras el primer toque en la pantalla (política del navegador)
   useEffect(() => {
@@ -44,10 +45,17 @@ export function ScreenView() {
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown])
 
-  // Sirena al alertar, redoble al girar y fanfarria al revelar
+  // Sirena cada vez que el anfitrión manda una alerta (alertSeq cambia)
+  useEffect(() => {
+    if (state.alertSeq !== prevAlertSeq.current) {
+      if (state.alertSeq > 0) playSiren()
+      prevAlertSeq.current = state.alertSeq
+    }
+  }, [state.alertSeq])
+
+  // Redoble al girar y fanfarria al revelar
   useEffect(() => {
     if (state.phase !== prevPhase.current) {
-      if (state.phase === 'alert') playSiren()
       if (state.phase === 'spinning') playRoll()
       if (state.phase === 'revealed') playFanfare()
       prevPhase.current = state.phase
@@ -90,7 +98,7 @@ export function ScreenView() {
         </div>
       )}
 
-      {/* Alerta estilo Juego del Calamar antes del conteo */}
+      {/* Sirena de alerta del rancho (la manda el anfitrión desde el celular) */}
       {state.phase === 'alert' && <AlertOverlay />}
 
       {/* Número ganador a pantalla completa */}

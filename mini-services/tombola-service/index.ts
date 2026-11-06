@@ -9,7 +9,7 @@ import { Server } from 'socket.io'
 const TOTAL_NUMBERS = 100
 const COUNTDOWN_FROM = 5
 const SPIN_MS = 1900
-// Duración de la sirena de alerta antes del conteo (estilo Juego del Calamar)
+// Duración de la sirena visual/sonora cuando el anfitrión manda la alerta
 const ALERT_MS = 3500
 
 type Phase = 'idle' | 'alert' | 'countdown' | 'spinning' | 'revealed'
@@ -21,6 +21,8 @@ interface GameState {
   lastNumber: number | null
   remaining: number
   total: number
+  // Contador de alertas enviadas: los clientes lo vigilan para repetir la sirena
+  alertSeq: number
 }
 
 const state: GameState = {
@@ -30,11 +32,14 @@ const state: GameState = {
   lastNumber: null,
   remaining: TOTAL_NUMBERS,
   total: TOTAL_NUMBERS,
+  alertSeq: 0,
 }
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let spinTimer: ReturnType<typeof setTimeout> | null = null
 let alertTimer: ReturnType<typeof setTimeout> | null = null
+// Fase a la que se regresa cuando termina la alerta ('idle' o 'revealed')
+let phaseBeforeAlert: Phase = 'idle'
 
 function snapshot(): GameState {
   return {
@@ -44,6 +49,7 @@ function snapshot(): GameState {
     lastNumber: state.lastNumber,
     remaining: state.remaining,
     total: state.total,
+    alertSeq: state.alertSeq,
   }
 }
 
@@ -66,29 +72,48 @@ function clearTimers() {
   }
 }
 
+/**
+ * ALERTA manual: el anfitrión la manda desde su celular con el botón
+ * "MANDAR ALERTA". Suena la sirena en todas las pantallas y, al acabar,
+ * se regresa a la fase en la que estábamos (idle o revealed).
+ */
+function startAlert(): 'ok' | 'busy' {
+  if (state.phase === 'countdown' || state.phase === 'spinning') return 'busy'
+  phaseBeforeAlert = state.phase === 'revealed' ? 'revealed' : 'idle'
+  state.phase = 'alert'
+  state.alertSeq += 1
+  if (alertTimer) clearTimeout(alertTimer)
+  broadcast()
+  console.log('ALERTA enviada: la nueva rifa está por comenzar')
+
+  alertTimer = setTimeout(() => {
+    alertTimer = null
+    state.phase = phaseBeforeAlert
+    broadcast()
+  }, ALERT_MS)
+
+  return 'ok'
+}
+
 function startDraw(): 'ok' | 'busy' | 'empty' {
   // Se permite lanzar cuando está listo o cuando ya se reveló el número anterior
-  if (
-    state.phase === 'alert' ||
-    state.phase === 'countdown' ||
-    state.phase === 'spinning'
-  ) {
+  if (state.phase === 'countdown' || state.phase === 'spinning') {
     return 'busy'
   }
   if (state.remaining <= 0) return 'empty'
 
-  // ── Fase de ALERTA: sirena para llamar la atención de todos ──
-  state.phase = 'alert'
+  // Si hay una alerta sonando, se corta y el conteo arranca de inmediato
+  if (alertTimer) {
+    clearTimeout(alertTimer)
+    alertTimer = null
+  }
+
+  // ── Cuenta atrás 5 → 0 ──
+  state.phase = 'countdown'
+  state.countdown = COUNTDOWN_FROM
   broadcast()
-  console.log('ALERTA: la nueva rifa está por comenzar')
 
-  alertTimer = setTimeout(() => {
-    // ── Inicia la cuenta atrás 5 → 0 ──
-    state.phase = 'countdown'
-    state.countdown = COUNTDOWN_FROM
-    broadcast()
-
-    countdownTimer = setInterval(() => {
+  countdownTimer = setInterval(() => {
     state.countdown -= 1
     if (state.countdown >= 0) {
       // Muestra 5, 4, 3, 2, 1, 0 — el 0 permanece un segundo
@@ -117,8 +142,7 @@ function startDraw(): 'ok' | 'busy' | 'empty' {
         console.log(`Número cantado: ${picked} | quedan ${state.remaining}`)
       }, SPIN_MS)
     }
-    }, 1000)
-  }, ALERT_MS)
+  }, 1000)
 
   return 'ok'
 }
@@ -130,6 +154,7 @@ function resetGame() {
   state.drawn = []
   state.lastNumber = null
   state.remaining = TOTAL_NUMBERS
+  phaseBeforeAlert = 'idle'
   broadcast()
   console.log('Juego reiniciado')
 }
@@ -163,6 +188,12 @@ io.on('connection', (socket) => {
     const result = startDraw()
     if (result === 'busy') socket.emit('busy')
     if (result === 'empty') socket.emit('empty')
+  })
+
+  socket.on('alert', () => {
+    console.log(`ALERT recibido de ${socket.id} (fase actual: ${state.phase})`)
+    const result = startAlert()
+    if (result === 'busy') socket.emit('busy')
   })
 
   socket.on('reset', () => {

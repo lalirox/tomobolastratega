@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Hand, RotateCcw, Smartphone, Wifi, WifiOff } from 'lucide-react'
+import { Hand, RotateCcw, Siren, Smartphone, Wifi, WifiOff } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,9 +19,10 @@ import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
-  const { state, connected, notice, press, reset } = useTombola('controller')
+  const { state, connected, notice, press, sendAlert, reset } = useTombola('controller')
   const prevPhase = useRef(state.phase)
   const prevCountdown = useRef(state.countdown)
+  const prevAlertSeq = useRef(state.alertSeq)
 
   // Desbloquear audio en el primer toque
   useEffect(() => {
@@ -43,9 +44,10 @@ export function ControllerView() {
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown])
 
+  // Sirena + vibración cada vez que se manda una alerta (alertSeq cambia)
   useEffect(() => {
-    if (state.phase !== prevPhase.current) {
-      if (state.phase === 'alert') {
+    if (state.alertSeq !== prevAlertSeq.current) {
+      if (state.alertSeq > 0) {
         playSiren()
         try {
           navigator.vibrate?.([250, 120, 250, 120, 250])
@@ -53,6 +55,12 @@ export function ControllerView() {
           // sin vibración
         }
       }
+      prevAlertSeq.current = state.alertSeq
+    }
+  }, [state.alertSeq])
+
+  useEffect(() => {
+    if (state.phase !== prevPhase.current) {
       if (state.phase === 'spinning') {
         playRoll()
         try {
@@ -73,10 +81,11 @@ export function ControllerView() {
     }
   }, [state.phase])
 
-  const busy =
-    state.phase === 'alert' || state.phase === 'countdown' || state.phase === 'spinning'
+  const busy = state.phase === 'countdown' || state.phase === 'spinning'
   const empty = state.remaining <= 0
   const disabled = !connected || busy || empty
+  // La alerta solo se bloquea mientras la tómbola está trabajando
+  const alertDisabled = !connected || busy
 
   const handlePress = () => {
     if (disabled) return
@@ -87,6 +96,16 @@ export function ControllerView() {
       // sin vibración
     }
     press()
+  }
+
+  const handleAlert = () => {
+    if (alertDisabled) return
+    try {
+      navigator.vibrate?.(60)
+    } catch {
+      // sin vibración
+    }
+    sendAlert()
   }
 
   return (
@@ -212,9 +231,7 @@ export function ControllerView() {
           >
             <span className="pointer-events-none absolute left-[18%] top-[12%] h-6 w-10 rounded-full bg-white/25 blur-[6px]" aria-hidden="true" />
             {busy
-              ? state.phase === 'alert'
-                ? '⚠ ALERTA ⚠'
-                : 'EN MARCHA'
+              ? 'EN MARCHA'
               : empty
                 ? 'VACÍO'
                 : state.phase === 'revealed'
@@ -231,6 +248,29 @@ export function ControllerView() {
             : state.phase === 'revealed'
               ? 'Presiona para cantar otro número'
               : 'Presiona para iniciar la cuenta 5 → 0'}
+        </p>
+      </div>
+
+      {/* Botón de ALERTA: solo manda la sirena a las pantallas */}
+      <div className="mt-6 w-full max-w-sm">
+        <button
+          type="button"
+          onClick={handleAlert}
+          disabled={alertDisabled}
+          aria-label="Mandar la sirena de alerta a todas las pantallas"
+          className={`flex w-full items-center justify-center gap-3 rounded-md border-2 px-6 py-4 font-rye text-xl shadow-[0_8px_0_#4a3510,0_14px_26px_rgba(0,0,0,.5)] transition-all duration-100 ${
+            alertDisabled
+              ? 'cursor-not-allowed border-[#4a3a24] bg-gradient-to-b from-[#4a3a28] to-[#33271a] text-[#9a8a6a]'
+              : state.phase === 'alert'
+                ? 'animate-pulse-fast border-[#e8c877] bg-gradient-to-b from-[#f0d070] to-[#c9a227] text-[#2b1a0c]'
+                : 'border-[#8a6a1c] bg-gradient-to-b from-[#e0bd6a] to-[#b8860b] text-[#2b1a0c] hover:brightness-110 active:translate-y-1.5 active:shadow-[0_3px_0_#4a3510,0_6px_14px_rgba(0,0,0,.45)]'
+          }`}
+        >
+          <Siren className="h-6 w-6 shrink-0" aria-hidden="true" />
+          {state.phase === 'alert' ? '¡SIRENA SONANDO!' : 'MANDAR ALERTA'}
+        </button>
+        <p className="mt-2 text-center font-elite text-xs text-[#c9a97a]">
+          Toca para llamar la atención de todos: sonará la sirena en la pantalla
         </p>
       </div>
 
