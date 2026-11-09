@@ -23,6 +23,8 @@ interface GameState {
   total: number
   // Contador de alertas enviadas: los clientes lo vigilan para repetir la sirena
   alertSeq: number
+  // Lista secreta del jefe: próximos números que saldrán, en orden
+  fixedQueue: number[]
 }
 
 const state: GameState = {
@@ -33,6 +35,7 @@ const state: GameState = {
   remaining: TOTAL_NUMBERS,
   total: TOTAL_NUMBERS,
   alertSeq: 0,
+  fixedQueue: [],
 }
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -50,6 +53,7 @@ function snapshot(): GameState {
     remaining: state.remaining,
     total: state.total,
     alertSeq: state.alertSeq,
+    fixedQueue: [...state.fixedQueue],
   }
 }
 
@@ -129,11 +133,20 @@ function startDraw(): 'ok' | 'busy' | 'empty' {
       broadcast()
 
       spinTimer = setTimeout(() => {
-        const pool: number[] = []
-        for (let n = 1; n <= TOTAL_NUMBERS; n++) {
-          if (!state.drawn.includes(n)) pool.push(n)
+        // Si el jefe programó su lista secreta, sale el siguiente número de
+        // ella; si no, la bola es al azar entre las que quedan en el tambor
+        const fixed = state.fixedQueue.find((n) => !state.drawn.includes(n))
+        let picked: number
+        if (fixed !== undefined) {
+          picked = fixed
+          state.fixedQueue = state.fixedQueue.filter((n) => n !== fixed)
+        } else {
+          const pool: number[] = []
+          for (let n = 1; n <= TOTAL_NUMBERS; n++) {
+            if (!state.drawn.includes(n)) pool.push(n)
+          }
+          picked = pool[Math.floor(Math.random() * pool.length)]
         }
-        const picked = pool[Math.floor(Math.random() * pool.length)]
         state.drawn.push(picked)
         state.lastNumber = picked
         state.remaining = TOTAL_NUMBERS - state.drawn.length
@@ -154,6 +167,7 @@ function resetGame() {
   state.drawn = []
   state.lastNumber = null
   state.remaining = TOTAL_NUMBERS
+  state.fixedQueue = []
   phaseBeforeAlert = 'idle'
   broadcast()
   console.log('Juego reiniciado')
@@ -194,6 +208,25 @@ io.on('connection', (socket) => {
     console.log(`ALERT recibido de ${socket.id} (fase actual: ${state.phase})`)
     const result = startAlert()
     if (result === 'busy') socket.emit('busy')
+  })
+
+  // El jefe (página secreta "La lista del jefe") define qué números
+  // saldrán del tambor y en qué orden. Se limpian duplicados, números
+  // inválidos y números que ya se cantaron.
+  socket.on('setQueue', (data: { numbers?: unknown }) => {
+    const raw = Array.isArray(data?.numbers) ? data.numbers : []
+    const seen = new Set<number>()
+    const clean: number[] = []
+    for (const item of raw) {
+      const n = Number(item)
+      if (!Number.isInteger(n) || n < 1 || n > TOTAL_NUMBERS) continue
+      if (seen.has(n) || state.drawn.includes(n)) continue
+      seen.add(n)
+      clean.push(n)
+    }
+    state.fixedQueue = clean
+    broadcast()
+    console.log(`Lista del jefe actualizada: ${clean.length} números programados`)
   })
 
   socket.on('reset', () => {

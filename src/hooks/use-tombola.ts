@@ -62,5 +62,10 @@ export function useTombola(role: Role) {
     socketRef.current?.emit('reset')
   }, [])
 
-  return { state, connected, notice, press, sendAlert, reset }
+  // El jefe programa la lista de números que saldrán (modo dirigido)
+  const sendQueue = useCallback((numbers: number[]) => {
+    socketRef.current?.emit('setQueue', { numbers })
+  }, [])
+
+  return { state, connected, notice, press, sendAlert, reset, sendQueue }
 }

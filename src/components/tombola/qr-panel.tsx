@@ -246,3 +246,125 @@ export function Studs() {
     </>
   )
 }
+
+// ─────────────────────────────────────────────────────────────
+// QR SECRETO DEL JEFE: aparece al presionar la marca "Y" del
+// encabezado de la pantalla y se oculta solo a los 10 segundos.
+// Lleva a la página donde el jefe decide qué números del 1 al
+// 100 saldrán del tambor (/?lista).
+// ─────────────────────────────────────────────────────────────
+
+const SECRET_SECONDS = 10
+
+export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
+  const [qrSrc, setQrSrc] = useState<string | null>(null)
+  const [url, setUrl] = useState('')
+  const [secondsLeft, setSecondsLeft] = useState(SECRET_SECONDS)
+
+  // Ref siempre fresco para usarlo en timers sin re-crear efectos
+  const closeRef = useRef(onClose)
+  useEffect(() => {
+    closeRef.current = onClose
+  })
+
+  // QR de la página secreta de la lista del jefe
+  useEffect(() => {
+    let cancelled = false
+    const link = `${window.location.origin}/?lista`
+    QRCode.toDataURL(link, {
+      width: 560,
+      margin: 2,
+      color: { dark: '#2b1a0c', light: '#f0e8d2' },
+      errorCorrectionLevel: 'M',
+    })
+      .then((src) => {
+        if (cancelled) return
+        setUrl(link)
+        setQrSrc(src)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setUrl(link)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Autodestrucción: cuenta 10 s y se cierra solo
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      queueMicrotask(() => closeRef.current())
+      return
+    }
+    const t = setTimeout(() => setSecondsLeft(secondsLeft - 1), 1000)
+    return () => clearTimeout(t)
+  }, [secondsLeft])
+
+  const progress = (secondsLeft / SECRET_SECONDS) * 100
+
+  return (
+    <div
+      className="animate-fade-in fixed inset-0 z-[80] flex items-center justify-center overflow-hidden bg-[#070402]/95 p-4"
+      role="dialog"
+      aria-label="Código QR secreto de la lista del jefe"
+      onClick={() => closeRef.current()}
+    >
+      {/* Rayos dorados girando detrás del cartel */}
+      <div className="rays-spin absolute left-1/2 top-1/2 h-[250vmax] w-[250vmax]" aria-hidden="true" />
+
+      <div
+        className="parchment relative z-10 w-full max-w-sm rounded-md border-4 border-double border-[#4a3a24] p-5 text-center shadow-[0_18px_44px_rgba(0,0,0,.65)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Studs />
+        <p className="font-elite text-xs font-bold tracking-[0.35em] text-[#8b1a1a]">
+          🔒 SOLO PARA EL JEFE
+        </p>
+        <h2 className="mt-1 font-rye text-2xl text-[#33240f] sm:text-3xl">LA LISTA DEL JEFE</h2>
+        <p className="mt-1 font-elite text-sm leading-snug text-[#5a4626]">
+          Escanea y decide qué números del 1 al 100 saldrán del tambor
+        </p>
+
+        <div className="mx-auto mt-4 w-fit rounded-md border-4 border-double border-[#4a3a24] bg-[#f0e8d2] p-2 shadow-inner">
+          {qrSrc ? (
+            <img
+              src={qrSrc}
+              alt="Código QR secreto para abrir la lista del jefe en el celular"
+              className="h-48 w-48 sm:h-56 sm:w-56"
+            />
+          ) : (
+            <div className="flex h-48 w-48 items-center justify-center sm:h-56 sm:w-56">
+              <span className="font-elite text-xs text-[#8a6a3f]">Generando QR...</span>
+            </div>
+          )}
+        </div>
+
+        <p className="mt-3 break-all font-elite text-xs text-[#5a4626]">{url || '...'}</p>
+
+        {/* Cuenta regresiva antes de ocultarse */}
+        <div className="mt-4" role="timer" aria-live="off">
+          <div
+            className="h-2 overflow-hidden rounded-full bg-[#d4c8a8]"
+            role="progressbar"
+            aria-label="Tiempo restante para ocultar el QR secreto"
+            aria-valuemin={0}
+            aria-valuemax={SECRET_SECONDS}
+            aria-valuenow={secondsLeft}
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#8b1a1a] to-[#c9a227] transition-all duration-1000 ease-linear"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-1.5 font-elite text-xs font-bold text-[#8b1a1a]">
+            Se oculta en {secondsLeft}s
+          </p>
+        </div>
+        <p className="mt-2 font-elite text-[10px] tracking-[0.3em] text-[#8a6a3f]">
+          TOCA PARA CERRAR
+        </p>
+      </div>
+    </div>
+  )
+}

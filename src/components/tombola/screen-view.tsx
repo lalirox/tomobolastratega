@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { RotateCcw, Sparkles, Volume2, VolumeX } from 'lucide-react'
+import { ListOrdered, RotateCcw, Sparkles, Volume2, VolumeX } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
 import { Drum } from '@/components/tombola/drum'
-import { QrPanel, Studs } from '@/components/tombola/qr-panel'
+import { QrPanel, SecretQrOverlay, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
 import { AlertOverlay, BrandingOverlay, WinnerOverlay } from '@/components/tombola/overlays'
 import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
-import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
+import { isMuted, loadMutePreference, playClick, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
 
 export function ScreenView() {
   const { state, connected, notice, reset } = useTombola('screen')
@@ -29,6 +29,8 @@ export function ScreenView() {
   const [winnerNumber, setWinnerNumber] = useState<number | null>(null)
   // Pantalla de marca POSADA STRATEGA CONSULTORES 2026 (tras los 20 s del ganador)
   const [branding, setBranding] = useState(false)
+  // QR secreto del jefe (se abre presionando la marca Y del encabezado)
+  const [secretQr, setSecretQr] = useState(false)
   const prevPhase = useRef(state.phase)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef(state.alertSeq)
@@ -137,11 +139,28 @@ export function ScreenView() {
       {/* Pantalla de marca: permanece hasta la próxima alerta o número */}
       {branding && state.phase === 'revealed' && <BrandingOverlay />}
 
+      {/* QR secreto del jefe: se abre con la marca Y del encabezado y se
+          oculta solo a los 10 segundos */}
+      {secretQr && <SecretQrOverlay onClose={() => setSecretQr(false)} />}
+
       {/* Cabecera compacta: logo + letrero + controles */}
       <header className="relative z-20 overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 shadow-inner">
         <div className="mx-auto flex w-full max-w-[1700px] flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 sm:px-5">
           <StrategaLogo className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14" />
-          <BrandY className="h-9 w-9 shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.8)] sm:h-11 sm:w-11" />
+          {/* Botón secreto: la marca Y abre el QR de la lista del jefe por 10 s.
+              Sin texto ni pistas visibles: solo el anfitrión lo conoce. */}
+          <button
+            type="button"
+            onClick={() => {
+              primeAudio()
+              playClick()
+              setSecretQr(true)
+            }}
+            aria-label="Acceso secreto del jefe"
+            className="shrink-0 transition-transform active:scale-90"
+          >
+            <BrandY className="h-9 w-9 shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.8)] sm:h-11 sm:w-11" />
+          </button>
           <div className="min-w-0">
             <h1 className="font-rye text-lg leading-tight tracking-wide text-[#e6d9b8] drop-shadow-[0_3px_0_rgba(0,0,0,.8)] sm:text-2xl">
               TÓMBOLA DEL RANCHO
@@ -153,6 +172,16 @@ export function ScreenView() {
 
           {/* Controles de la pantalla */}
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {/* Insignia de la lista programada (solo visible si el jefe activó su lista) */}
+            {state.fixedQueue.length > 0 && (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#8a6a1c] bg-[#2b2210] px-3 py-1 font-elite text-xs font-bold text-[#e8c877]"
+                role="status"
+              >
+                <ListOrdered className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="hidden md:inline">Lista del jefe:</span> {state.fixedQueue.length}
+              </span>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-elite text-xs ${
                 connected

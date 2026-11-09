@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Hand, RotateCcw, Siren, Smartphone, Wifi, WifiOff } from 'lucide-react'
+import { Hand, ListOrdered, RotateCcw, Siren, Smartphone, Wifi, WifiOff } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -249,6 +249,13 @@ export function ControllerView() {
               ? 'Presiona para cantar otro número'
               : 'Presiona para iniciar la cuenta 5 → 0'}
         </p>
+        {/* Aviso discreto para el anfitrión cuando su lista programada está activa */}
+        {state.fixedQueue.length > 0 && (
+          <p className="mt-1.5 flex items-center justify-center gap-1.5 font-elite text-xs font-bold text-[#e8c877]">
+            <ListOrdered className="h-3.5 w-3.5" aria-hidden="true" />
+            Lista del jefe: saldrá el {state.fixedQueue[0]} ({state.fixedQueue.length} programados)
+          </p>
+        )}
       </div>
 
       {/* Botón de ALERTA: solo manda la sirena a las pantallas */}
