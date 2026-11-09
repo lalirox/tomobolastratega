@@ -15,6 +15,8 @@ export interface GameState {
   lockSeq: number
   /** Lista programada por el jefe: próximos números que saldrán, en orden */
   fixedQueue: number[]
+  /** Momento (epoch ms) en que arrancó la fase actual: countdown, spinning o alert */
+  phaseStart: number
 }
 
 export const INITIAL_STATE: GameState = {
@@ -27,6 +29,7 @@ export const INITIAL_STATE: GameState = {
   alertSeq: 0,
   lockSeq: 0,
   fixedQueue: [],
+  phaseStart: 0,
 }
 
 export type Role = 'screen' | 'controller'
