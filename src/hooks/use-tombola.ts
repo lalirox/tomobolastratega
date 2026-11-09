@@ -58,6 +58,12 @@ export function useTombola(role: Role) {
     socketRef.current?.emit('alert')
   }, [])
 
+  // BLOQUEAR PANTALLA desde el celular: la pantalla grande pasa a reposo
+  // (solo el logo + LA GRAN NOCHE + POSADA STRATEGA CONSULTORES 2026)
+  const lockScreen = useCallback(() => {
+    socketRef.current?.emit('lock')
+  }, [])
+
   const reset = useCallback(() => {
     socketRef.current?.emit('reset')
   }, [])
@@ -67,5 +73,5 @@ export function useTombola(role: Role) {
     socketRef.current?.emit('setQueue', { numbers })
   }, [])
 
-  return { state, connected, notice, press, sendAlert, reset, sendQueue }
+  return { state, connected, notice, press, sendAlert, reset, sendQueue, lockScreen }
 }

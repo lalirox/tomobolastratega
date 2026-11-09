@@ -11,6 +11,8 @@ export interface GameState {
   total: number
   /** Contador de alertas enviadas: al cambiar, suena la sirena de nuevo */
   alertSeq: number
+  /** Contador de bloqueos remotos: al cambiar, la pantalla grande pasa a reposo */
+  lockSeq: number
   /** Lista programada por el jefe: próximos números que saldrán, en orden */
   fixedQueue: number[]
 }
@@ -23,6 +25,7 @@ export const INITIAL_STATE: GameState = {
   remaining: 100,
   total: 100,
   alertSeq: 0,
+  lockSeq: 0,
   fixedQueue: [],
 }
 

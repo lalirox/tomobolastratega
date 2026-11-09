@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { Hand, ListOrdered, RotateCcw, Siren, Smartphone, Wifi, WifiOff } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Check, Hand, ListOrdered, Moon, RotateCcw, Siren, Smartphone, Wifi, WifiOff } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +20,13 @@ import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
-  const { state, connected, notice, press, sendAlert, reset } = useTombola('controller')
+  const { state, connected, notice, press, sendAlert, reset, lockScreen } = useTombola('controller')
   // null = aún no llega la primera sincronización del servicio
   const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef<number | null>(null)
+  // Confirmación breve al bloquear la pantalla grande desde el celular
+  const [lockSent, setLockSent] = useState(false)
 
   // Desbloquear audio en el primer toque
   useEffect(() => {
@@ -120,6 +122,21 @@ export function ControllerView() {
       // sin vibración
     }
     sendAlert()
+  }
+
+  // BLOQUEAR PANTALLA: la pantalla grande pasa a reposo (solo el logo,
+  // LA GRAN NOCHE y POSADA STRATEGA CONSULTORES 2026). Se despierta
+  // tocándola o con el siguiente número/alerta.
+  const handleLock = () => {
+    playClick()
+    try {
+      navigator.vibrate?.(60)
+    } catch {
+      // sin vibración
+    }
+    lockScreen()
+    setLockSent(true)
+    setTimeout(() => setLockSent(false), 2500)
   }
 
   return (
@@ -292,6 +309,36 @@ export function ControllerView() {
         </button>
         <p className="mt-2 text-center font-elite text-xs text-[#c9a97a]">
           Toca para llamar la atención de todos: sonará la sirena en la pantalla
+        </p>
+      </div>
+
+      {/* BLOQUEAR PANTALLA: apaga la vista de la tómbola en la pantalla grande */}
+      <div className="mt-5 w-full max-w-sm">
+        <button
+          type="button"
+          onClick={handleLock}
+          aria-label="Bloquear la pantalla grande: pasa al reposo con el logo y La Gran Noche"
+          className={`flex w-full items-center justify-center gap-3 rounded-md border-2 px-6 py-3.5 font-rye text-lg shadow-[0_6px_0_#0d0803,0_12px_22px_rgba(0,0,0,.5)] transition-all duration-100 active:translate-y-1 active:shadow-[0_3px_0_#0d0803,0_5px_10px_rgba(0,0,0,.45)] ${
+            lockSent
+              ? 'border-[#4a6b2a] bg-gradient-to-b from-[#3d5522] to-[#243610] text-[#b8d98a]'
+              : 'border-[#4a3a24] bg-gradient-to-b from-[#2b1d0e] to-[#1a1208] text-[#e8c877] hover:brightness-125'
+          }`}
+        >
+          {lockSent ? (
+            <>
+              <Check className="h-5 w-5 shrink-0" aria-hidden="true" />
+              ¡PANTALLA BLOQUEADA!
+            </>
+          ) : (
+            <>
+              <Moon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              BLOQUEAR PANTALLA
+            </>
+          )}
+        </button>
+        <p className="mt-2 text-center font-elite text-[11px] leading-snug text-[#c9a97a]">
+          La pantalla grande pasa al reposo: solo se ve el logo, LA GRAN NOCHE y POSADA STRATEGA
+          CONSULTORES 2026. Se despierta tocándola o al cantar un número.
         </p>
       </div>
 

@@ -9,9 +9,9 @@ import {
   Lock,
   LockKeyholeOpen,
   Link2,
-  Moon,
   QrCode as QrIcon,
   ShieldCheck,
+  Smartphone,
   Timer,
 } from 'lucide-react'
 import { buildQrPoster, QR_FILENAMES, saveDataUrl } from '@/lib/qr-download'
@@ -21,7 +21,7 @@ const QR_PASSWORD = 'Strategapool_2026'
 // El QR se vuelve a bloquear solo después de estos segundos visibles
 const AUTOLOCK_SECONDS = 10
 
-export function QrPanel({ onLockScreen }: { onLockScreen: () => void }) {
+export function QrPanel() {
   const [qrSrc, setQrSrc] = useState<string | null>(null)
   const [url, setUrl] = useState('')
   const [copied, setCopied] = useState(false)
@@ -260,22 +260,6 @@ export function QrPanel({ onLockScreen }: { onLockScreen: () => void }) {
           </div>
         </div>
       )}
-
-      {/* Bloquear la pantalla grande: solo se verá el logo y LA GRAN NOCHE */}
-      <div className="mt-3 border-t border-[#cfc3a4] pt-3">
-        <button
-          type="button"
-          onClick={onLockScreen}
-          title="Apaga la vista de la tómbola: solo se verá el logo y «LA GRAN NOCHE». Toca la pantalla o presiona una tecla para regresar."
-          className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-[#4a3a24] bg-[#241608] px-3 py-2.5 font-elite text-xs font-bold tracking-[0.22em] text-[#e8c877] shadow transition hover:bg-[#33200f] active:scale-95"
-        >
-          <Moon className="h-4 w-4" aria-hidden="true" />
-          BLOQUEAR PANTALLA
-        </button>
-        <p className="mt-1.5 text-center font-elite text-[10px] leading-snug text-[#8a6a3f]">
-          También se bloquea sola tras 3 minutos sin movimiento. Toca la pantalla para despertarla.
-        </p>
-      </div>
     </section>
   )
 }
@@ -293,24 +277,29 @@ export function Studs() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// QR SECRETO DEL JEFE: aparece al presionar la marca "Y" del
-// encabezado de la pantalla y se oculta solo a los 10 segundos.
-// Lleva a la página donde el jefe decide qué números del 1 al
-// 100 saldrán del tambor (/?lista).
+// CARTELES QR A PANTALLA COMPLETA (se ocultan solos a los 10 s):
+//  · ControlQrOverlay → aparece al tocar el LOGO del encabezado;
+//    es el QR del control remoto que hace girar la tómbola (/?control)
+//  · SecretQrOverlay  → aparece al presionar la marca "Y"; es el QR
+//    MAESTRO del jefe para programar los números que saldrán (/?lista)
 // ─────────────────────────────────────────────────────────────
 
-const SECRET_SECONDS = 10
+const OVERLAY_SECONDS = 10
 
-export function SecretQrOverlay({
-  onClose,
-  onLockScreen,
-}: {
+interface QrOverlayCardProps {
+  title: string
+  icon: React.ReactNode
+  path: string
+  alt: string
+  saveTitle: string
+  saveFilename: string
   onClose: () => void
-  onLockScreen: () => void
-}) {
+}
+
+function QrOverlayCard({ title, icon, path, alt, saveTitle, saveFilename, onClose }: QrOverlayCardProps) {
   const [qrSrc, setQrSrc] = useState<string | null>(null)
   const [url, setUrl] = useState('')
-  const [secondsLeft, setSecondsLeft] = useState(SECRET_SECONDS)
+  const [secondsLeft, setSecondsLeft] = useState(OVERLAY_SECONDS)
   const [saving, setSaving] = useState(false)
 
   // Ref siempre fresco para usarlo en timers sin re-crear efectos
@@ -319,10 +308,10 @@ export function SecretQrOverlay({
     closeRef.current = onClose
   })
 
-  // QR de la página secreta de la lista del jefe
+  // QR del enlace fijo (el enlace nunca cambia)
   useEffect(() => {
     let cancelled = false
-    const link = `${window.location.origin}/?lista`
+    const link = `${window.location.origin}${path}`
     QRCode.toDataURL(link, {
       width: 560,
       margin: 2,
@@ -341,7 +330,7 @@ export function SecretQrOverlay({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [path])
 
   // Autodestrucción: cuenta 10 s y se cierra solo
   useEffect(() => {
@@ -353,16 +342,15 @@ export function SecretQrOverlay({
     return () => clearTimeout(t)
   }, [secondsLeft])
 
-  const progress = (secondsLeft / SECRET_SECONDS) * 100
+  const progress = (secondsLeft / OVERLAY_SECONDS) * 100
 
-  // Guarda el QR del jefe como PNG fijo (quede guardado aunque el
-  // cartel se oculte a los 10 segundos)
+  // Guarda el QR como PNG fijo (queda guardado aunque el cartel se oculte)
   const savePng = async () => {
     if (!url || saving) return
     setSaving(true)
     try {
-      const poster = await buildQrPoster(url, 'LA LISTA DEL JEFE · POSADA 2026')
-      saveDataUrl(poster, QR_FILENAMES.lista)
+      const poster = await buildQrPoster(url, saveTitle)
+      saveDataUrl(poster, saveFilename)
     } catch {
       // sin canvas disponible
     } finally {
@@ -370,18 +358,11 @@ export function SecretQrOverlay({
     }
   }
 
-  // Bloquea la pantalla grande y cierra este cartel
-  const lockNow = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onLockScreen()
-    closeRef.current()
-  }
-
   return (
     <div
       className="animate-fade-in fixed inset-0 z-[80] flex items-center justify-center overflow-hidden bg-[#070402]/95 p-4"
       role="dialog"
-      aria-label="Código QR privado"
+      aria-label={alt}
       onClick={() => closeRef.current()}
     >
       {/* Rayos dorados girando detrás del cartel */}
@@ -392,19 +373,14 @@ export function SecretQrOverlay({
         onClick={(e) => e.stopPropagation()}
       >
         <Studs />
-        {/* Discreto a propósito: no revela qué hace ni a dónde lleva */}
-        <div className="flex items-center justify-center gap-2">
-          <Lock className="h-5 w-5 shrink-0 text-[#8b1a1a]" aria-hidden="true" />
-          <h2 className="font-rye text-xl text-[#33240f] sm:text-2xl">SOLO PARA EL JEFE</h2>
+        <div className="flex items-center justify-center gap-2 text-[#8b1a1a]">
+          {icon}
+          <h2 className="font-rye text-xl text-[#33240f] sm:text-2xl">{title}</h2>
         </div>
 
         <div className="mx-auto mt-4 w-fit rounded-md border-4 border-double border-[#4a3a24] bg-[#f0e8d2] p-2 shadow-inner">
           {qrSrc ? (
-            <img
-              src={qrSrc}
-              alt="Código QR privado"
-              className="h-48 w-48 sm:h-56 sm:w-56"
-            />
+            <img src={qrSrc} alt={alt} className="h-48 w-48 sm:h-56 sm:w-56" />
           ) : (
             <div className="flex h-48 w-48 items-center justify-center sm:h-56 sm:w-56">
               <span className="font-elite text-xs text-[#8a6a3f]">Generando QR...</span>
@@ -417,9 +393,9 @@ export function SecretQrOverlay({
           <div
             className="h-2 overflow-hidden rounded-full bg-[#d4c8a8]"
             role="progressbar"
-            aria-label="Tiempo restante para ocultar el QR secreto"
+            aria-label="Tiempo restante para ocultar el QR"
             aria-valuemin={0}
-            aria-valuemax={SECRET_SECONDS}
+            aria-valuemax={OVERLAY_SECONDS}
             aria-valuenow={secondsLeft}
           >
             <div
@@ -431,35 +407,55 @@ export function SecretQrOverlay({
             Se oculta en {secondsLeft}s
           </p>
         </div>
-        {/* Acciones del jefe: guardar el QR fijo o bloquear la pantalla */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              savePng()
-            }}
-            disabled={!url || saving}
-            className="inline-flex items-center justify-center gap-1.5 rounded-md border-2 border-[#4a3a24] bg-[#e0d5b8] px-2 py-2 font-elite text-[11px] font-bold text-[#33240f] shadow transition hover:bg-[#d4c8a8] active:scale-95 disabled:opacity-60"
-          >
-            <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {saving ? 'Guardando...' : 'Guardar QR'}
-          </button>
-          <button
-            type="button"
-            onClick={lockNow}
-            title="Apaga la vista de la tómbola: solo se verá el logo y «LA GRAN NOCHE»."
-            className="inline-flex items-center justify-center gap-1.5 rounded-md border-2 border-[#4a3a24] bg-[#241608] px-2 py-2 font-elite text-[11px] font-bold tracking-wide text-[#e8c877] shadow transition hover:bg-[#33200f] active:scale-95"
-          >
-            <Moon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            BLOQUEAR PANTALLA
-          </button>
-        </div>
+
+        {/* Guardar el QR fijo como PNG */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            savePng()
+          }}
+          disabled={!url || saving}
+          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border-2 border-[#4a3a24] bg-[#e0d5b8] px-2 py-2 font-elite text-[11px] font-bold text-[#33240f] shadow transition hover:bg-[#d4c8a8] active:scale-95 disabled:opacity-60"
+        >
+          <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          {saving ? 'Guardando...' : 'Guardar QR (PNG)'}
+        </button>
 
         <p className="mt-2 font-elite text-[10px] tracking-[0.3em] text-[#8a6a3f]">
           TOCA PARA CERRAR
         </p>
       </div>
     </div>
+  )
+}
+
+/** QR del CONTROL REMOTO: se abre al tocar el logo del encabezado de la pantalla */
+export function ControlQrOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <QrOverlayCard
+      title="CONTROL REMOTO"
+      icon={<Smartphone className="h-5 w-5 shrink-0" aria-hidden="true" />}
+      path="/?control"
+      alt="Código QR del control remoto de la tómbola"
+      saveTitle="CONTROL REMOTO · POSADA 2026"
+      saveFilename={QR_FILENAMES.control}
+      onClose={onClose}
+    />
+  )
+}
+
+/** QR MAESTRO del jefe: se abre con la marca Y y lleva a la lista de números programados */
+export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <QrOverlayCard
+      title="SOLO PARA EL JEFE"
+      icon={<Lock className="h-5 w-5 shrink-0" aria-hidden="true" />}
+      path="/?lista"
+      alt="Código QR privado del jefe"
+      saveTitle="LA LISTA DEL JEFE · POSADA 2026"
+      saveFilename={QR_FILENAMES.lista}
+      onClose={onClose}
+    />
   )
 }

@@ -23,6 +23,9 @@ interface GameState {
   total: number
   // Contador de alertas enviadas: los clientes lo vigilan para repetir la sirena
   alertSeq: number
+  // Contador de bloqueos de pantalla: al cambiar, la pantalla grande pasa
+  // a reposo (logo + LA GRAN NOCHE + POSADA STRATEGA CONSULTORES 2026)
+  lockSeq: number
   // Lista secreta del jefe: próximos números que saldrán, en orden
   fixedQueue: number[]
 }
@@ -35,6 +38,7 @@ const state: GameState = {
   remaining: TOTAL_NUMBERS,
   total: TOTAL_NUMBERS,
   alertSeq: 0,
+  lockSeq: 0,
   fixedQueue: [],
 }
 
@@ -51,6 +55,7 @@ function snapshot(): GameState {
     remaining: state.remaining,
     total: state.total,
     alertSeq: state.alertSeq,
+    lockSeq: state.lockSeq,
     fixedQueue: [...state.fixedQueue],
   }
 }
@@ -207,6 +212,15 @@ io.on('connection', (socket) => {
     console.log(`ALERT recibido de ${socket.id} (fase actual: ${state.phase})`)
     const result = startAlert()
     if (result === 'busy') socket.emit('busy')
+  })
+
+  // BLOQUEAR PANTALLA: el anfitrión lo manda desde su celular; la pantalla
+  // grande pasa a reposo (solo logo + LA GRAN NOCHE + POSADA STRATEGA
+  // CONSULTORES 2026). Se despierta tocándola o con el siguiente evento.
+  socket.on('lock', () => {
+    state.lockSeq += 1
+    broadcast()
+    console.log(`LOCK recibido de ${socket.id}: pantalla grande en reposo (bloqueo #${state.lockSeq})`)
   })
 
   // El jefe (página secreta "La lista del jefe") define qué números

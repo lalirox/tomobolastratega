@@ -16,7 +16,7 @@ import {
 import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
 import { Drum } from '@/components/tombola/drum'
-import { QrPanel, SecretQrOverlay, Studs } from '@/components/tombola/qr-panel'
+import { ControlQrOverlay, QrPanel, SecretQrOverlay, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
 import { AlertOverlay, BrandingOverlay, LockOverlay, WinnerOverlay } from '@/components/tombola/overlays'
 import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
@@ -38,15 +38,19 @@ export function ScreenView() {
   const [presented, setPresented] = useState(false)
   // QR secreto del jefe (se abre presionando la marca Y del encabezado)
   const [secretQr, setSecretQr] = useState(false)
-  // Pantalla de bloqueo: solo el logo + LA GRAN NOCHE. Se activa con el
-  // botón BLOQUEAR PANTALLA (junto a los QR) o sola tras 3 minutos sin
-  // tocar nada; cualquier toque/tecla o evento del juego la despierta.
+  // QR del control remoto (se abre tocando el logo del encabezado)
+  const [controlQr, setControlQr] = useState(false)
+  // Pantalla de bloqueo (protector): logo + LA GRAN NOCHE + POSADA
+  // STRATEGA CONSULTORES 2026. Se activa con BLOQUEAR PANTALLA desde el
+  // celular del anfitrión o sola tras 3 minutos sin tocar nada; cualquier
+  // toque/tecla o evento del juego la despierta.
   const [locked, setLocked] = useState(false)
   const lastActivity = useRef(Date.now())
   // null = aún no llega la primera sincronización del servicio
   const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef<number | null>(null)
+  const prevLockSeq = useRef<number | null>(null)
 
   // Audio: se activa tras el primer toque en la pantalla (política del navegador)
   useEffect(() => {
@@ -77,6 +81,23 @@ export function ScreenView() {
       prevAlertSeq.current = state.alertSeq
     }
   }, [state.alertSeq])
+
+  // BLOQUEAR PANTALLA remoto: el anfitrión lo manda desde su celular
+  // (lockSeq cambia) y la pantalla grande pasa a reposo de inmediato.
+  // En la primera sincronización solo se toma el contador.
+  useEffect(() => {
+    if (prevLockSeq.current === null) {
+      prevLockSeq.current = state.lockSeq
+      return
+    }
+    if (state.lockSeq !== prevLockSeq.current) {
+      if (state.lockSeq > prevLockSeq.current) {
+        setLocked(true)
+        lastActivity.current = Date.now()
+      }
+      prevLockSeq.current = state.lockSeq
+    }
+  }, [state.lockSeq])
 
   // Redoble al girar y fanfarria al revelar. El overlay del ganador SOLO se
   // abre con un número recién cantado (la fase llega de countdown/spinning):
@@ -189,14 +210,6 @@ export function ScreenView() {
     setLocked((was) => (was ? false : was))
   }, [state.phase])
 
-  // Bloquear manualmente (botones BLOQUEAR PANTALLA junto a los QR)
-  const lockScreenNow = () => {
-    primeAudio()
-    playClick()
-    setLocked(true)
-    lastActivity.current = Date.now()
-  }
-
   const toggleSound = () => {
     primeAudio()
     const next = !isMuted()
@@ -248,12 +261,19 @@ export function ScreenView() {
       {/* Pantalla de marca: permanece hasta la próxima alerta o número */}
       {branding && state.phase === 'revealed' && <BrandingOverlay />}
 
+      {/* QR del control remoto: se abre tocando el logo del encabezado;
+          es el QR que convierte un celular en el control de la tómbola */}
+      {controlQr && (
+        <ControlQrOverlay
+          onClose={() => setControlQr(false)}
+        />
+      )}
+
       {/* QR secreto del jefe: se abre con la marca Y del encabezado y se
           oculta solo a los 10 segundos */}
       {secretQr && (
         <SecretQrOverlay
           onClose={() => setSecretQr(false)}
-          onLockScreen={lockScreenNow}
         />
       )}
 
@@ -264,15 +284,32 @@ export function ScreenView() {
       {/* Cabecera compacta: logo + letrero + controles */}
       <header className="relative z-20 overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 shadow-inner">
         <div className="mx-auto flex w-full max-w-[1700px] flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 sm:px-5">
-          <StrategaLogo className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14" />
-          {/* Botón secreto: la marca Y abre el QR de la lista del jefe por 10 s.
-              Sin texto ni pistas visibles: solo el anfitrión lo conoce. */}
+          {/* El LOGO abre el QR del control remoto (el que hace girar la
+              tómbola desde el celular) por 10 segundos */}
+          <button
+            type="button"
+            onClick={() => {
+              primeAudio()
+              playClick()
+              setControlQr(true)
+              setSecretQr(false)
+            }}
+            aria-label="Mostrar el QR del control remoto"
+            title="Toca el logo para mostrar el QR del control remoto"
+            className="shrink-0 transition-transform active:scale-90"
+          >
+            <StrategaLogo className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14" />
+          </button>
+          {/* Botón secreto: la marca Y abre el QR MAESTRO del jefe (para
+              programar los números que saldrán) por 10 s. Sin texto ni
+              pistas visibles: solo el anfitrión lo conoce. */}
           <button
             type="button"
             onClick={() => {
               primeAudio()
               playClick()
               setSecretQr(true)
+              setControlQr(false)
             }}
             aria-label="Acceso secreto del jefe"
             className="shrink-0 transition-transform active:scale-90"
@@ -535,7 +572,7 @@ export function ScreenView() {
             )}
           </section>
 
-          <QrPanel onLockScreen={lockScreenNow} />
+          <QrPanel />
         </div>
       </main>
 
