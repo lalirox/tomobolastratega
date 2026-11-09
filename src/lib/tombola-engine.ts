@@ -33,6 +33,7 @@ export function freshState(): GameState {
     total: TOTAL_NUMBERS,
     alertSeq: 0,
     lockSeq: 0,
+    revealSeq: 0,
     fixedQueue: [],
     phaseStart: 0,
   }
@@ -83,6 +84,10 @@ export function advance(state: GameState, now: number): GameState {
       lastNumber: picked,
       remaining: TOTAL_NUMBERS - drawn.length,
       fixedQueue: fixed !== undefined ? state.fixedQueue.filter((n) => n !== fixed) : state.fixedQueue,
+      // Contador de revelaciones: la pantalla grande abre el overlay del
+      // ganador cuando este número cambia, aunque se pierda por el camino
+      // la secuencia countdown → spinning (pestaña ralentizada, etc.)
+      revealSeq: state.revealSeq + 1,
       phaseStart: 0,
     }
   }
@@ -141,7 +146,21 @@ export function applyAction(
     }
 
     case 'reset': {
-      return { state: freshState(), result: 'ok' }
+      // Nueva ronda: se borra historial y lista del jefe, pero los
+      // contadores (alertas, bloqueos, revelaciones) siguen creciendo
+      return {
+        state: {
+          ...state,
+          phase: 'idle',
+          countdown: 0,
+          drawn: [],
+          lastNumber: null,
+          remaining: TOTAL_NUMBERS,
+          fixedQueue: [],
+          phaseStart: 0,
+        },
+        result: 'ok',
+      }
     }
 
     case 'setQueue': {

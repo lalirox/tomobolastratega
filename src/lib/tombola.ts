@@ -13,6 +13,8 @@ export interface GameState {
   alertSeq: number
   /** Contador de bloqueos remotos: al cambiar, la pantalla grande pasa a reposo */
   lockSeq: number
+  /** Contador de números cantados: al cambiar, la pantalla abre el overlay del ganador */
+  revealSeq: number
   /** Lista programada por el jefe: próximos números que saldrán, en orden */
   fixedQueue: number[]
   /** Momento (epoch ms) en que arrancó la fase actual: countdown, spinning o alert */
@@ -28,6 +30,7 @@ export const INITIAL_STATE: GameState = {
   total: 100,
   alertSeq: 0,
   lockSeq: 0,
+  revealSeq: 0,
   fixedQueue: [],
   phaseStart: 0,
 }

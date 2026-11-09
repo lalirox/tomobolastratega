@@ -46,6 +46,7 @@ export function ScreenView() {
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef<number | null>(null)
   const prevLockSeq = useRef<number | null>(null)
+  const prevRevealSeq = useRef<number | null>(null)
 
   // Audio: se activa tras el primer toque en la pantalla (política del navegador)
   useEffect(() => {
@@ -55,18 +56,25 @@ export function ScreenView() {
     return () => window.removeEventListener('pointerdown', unlock)
   }, [])
 
-  // Sonidos de la cuenta atrás 5 → 0
+  // Sonidos de la cuenta atrás 5 → 0. Hasta que llega la primera
+  // sincronización real del servidor, solo se toma el valor base.
   useEffect(() => {
+    if (!connected) {
+      prevCountdown.current = state.countdown
+      return
+    }
     if (state.phase === 'countdown' && state.countdown !== prevCountdown.current) {
       playTick(state.countdown)
     }
     prevCountdown.current = state.countdown
-  }, [state.phase, state.countdown])
+  }, [state.phase, state.countdown, connected])
 
   // Sirena cada vez que el anfitrión manda una alerta (alertSeq cambia).
-  // En la primera sincronización solo se toma el contador: si la página se
-  // (re)carga después de haber mandado alertas, NO vuelve a sonar la sirena.
+  // La referencia base se toma en la PRIMERA SINCRONIZACIÓN REAL (connected),
+  // nunca con el estado inicial del montaje: así si la página se (re)carga
+  // después de haber mandado alertas, NO vuelve a sonar la sirena.
   useEffect(() => {
+    if (!connected) return
     if (prevAlertSeq.current === null) {
       prevAlertSeq.current = state.alertSeq
       return
@@ -75,12 +83,14 @@ export function ScreenView() {
       if (state.alertSeq > 0) playSiren()
       prevAlertSeq.current = state.alertSeq
     }
-  }, [state.alertSeq])
+  }, [state.alertSeq, connected])
 
   // BLOQUEAR PANTALLA remoto: el anfitrión lo manda desde su celular
   // (lockSeq cambia) y la pantalla grande pasa a reposo de inmediato.
-  // En la primera sincronización solo se toma el contador.
+  // Igual que la sirena: el contador base se toma en la primera
+  // sincronización real para no bloquear una pantalla recién cargada.
   useEffect(() => {
+    if (!connected) return
     if (prevLockSeq.current === null) {
       prevLockSeq.current = state.lockSeq
       return
@@ -92,43 +102,47 @@ export function ScreenView() {
       }
       prevLockSeq.current = state.lockSeq
     }
-  }, [state.lockSeq])
+  }, [state.lockSeq, connected])
 
-  // Redoble al girar y fanfarria al revelar. El overlay del ganador SOLO se
-  // abre con un número recién cantado (la fase llega de countdown/spinning):
-  // si se manda una alerta durante 'revealed', al terminar la sirena la
-  // pantalla regresa a su vista original; si la página se recarga o se
-  // reconecta a mitad de la presentación, NO se vuelve a abrir el ganador.
+  // Redoble al girar y fanfarria al revelar. El overlay del ganador se abre
+  // con el CONTADOR de revelaciones (revealSeq): así funciona aunque el
+  // cliente se pierda fases intermedias (pestaña ralentizada por el
+  // navegador, reconexiones, saltos de countdown/spinning a revealed).
+  // Si la página se recarga a mitad de la presentación, NO se reabre el
+  // ganador (la primera sincronización solo toma el contador base).
   // Al cerrarse el ganador (20 s o toque) entra la pantalla de marca, que se
   // quita cuando se manda una alerta o un número nuevo.
   useEffect(() => {
+    // Espera a la PRIMERA SINCRONIZACIÓN REAL del servidor (connected):
+    // el estado inicial del montaje no cuenta como sincronización
+    if (!connected) return
     // Primera sincronización con el servicio: si la pantalla se carga cuando
     // el juego ya está en 'revealed', se toma como presentación terminada
     // (vista original con el historial), nunca se reabre el overlay
     if (prevPhase.current === null) {
       prevPhase.current = state.phase
+      prevRevealSeq.current = state.revealSeq
       if (state.phase === 'revealed') {
         queueMicrotask(() => setPresented(true))
       }
       return
     }
+
+    // Número recién cantado: el contador de revelaciones cambió y el estado
+    // viene en 'revealed' con una bola asignada → overlay a pantalla completa
+    if (state.revealSeq !== prevRevealSeq.current) {
+      prevRevealSeq.current = state.revealSeq
+      if (state.phase === 'revealed' && state.lastNumber !== null) {
+        queueMicrotask(() => {
+          setWinnerNumber(state.lastNumber)
+          setPresented(false)
+        })
+        playFanfare()
+      }
+    }
+
     if (state.phase !== prevPhase.current) {
-      if (state.phase === 'revealed') {
-        if (prevPhase.current === 'countdown' || prevPhase.current === 'spinning') {
-          // Número recién cantado: la presentación arranca de cero
-          queueMicrotask(() => {
-            setWinnerNumber(state.lastNumber)
-            setPresented(false)
-          })
-          playFanfare()
-        } else {
-          // Entrada a 'revealed' por recarga/reconexión/sincronización (no
-          // por un giro real): la presentación ya pasó, la pantalla muestra
-          // su vista original con el historial, nunca el overlay del ganador
-          queueMicrotask(() => setPresented(true))
-        }
-        // Si venimos de 'alert' NO se reabre el ganador: ya se presentó
-      } else {
+      if (state.phase !== 'revealed') {
         queueMicrotask(() => {
           setWinnerNumber(null)
           setBranding(false)
@@ -140,7 +154,7 @@ export function ScreenView() {
       if (state.phase === 'spinning') playRoll()
       prevPhase.current = state.phase
     }
-  }, [state.phase, state.lastNumber])
+  }, [state.phase, state.lastNumber, state.revealSeq, connected])
 
   // Números que parpadean mientras gira el tambor
   useEffect(() => {

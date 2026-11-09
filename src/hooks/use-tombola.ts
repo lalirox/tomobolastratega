@@ -24,9 +24,11 @@ export function useTombola(role: Role) {
   useEffect(() => {
     stopRef.current = false
     let timer: ReturnType<typeof setTimeout> | null = null
+    let inFlight = false
 
     const poll = async () => {
-      if (stopRef.current) return
+      if (stopRef.current || inFlight) return
+      inFlight = true
       try {
         const res = await fetch('/api/tombola', { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
@@ -37,6 +39,7 @@ export function useTombola(role: Role) {
       } catch {
         if (!stopRef.current) setConnected(false)
       } finally {
+        inFlight = false
         if (!stopRef.current) {
           const live =
             phaseRef.current === 'countdown' ||
@@ -47,10 +50,22 @@ export function useTombola(role: Role) {
       }
     }
 
+    // Al regresar a la pestaña (los navegadores ralentizan los timers de
+    // pestañas ocultas y pueden perderse el conteo o el número cantado),
+    // se consulta de inmediato para ponerse al día
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && !stopRef.current && !inFlight) {
+        if (timer) clearTimeout(timer)
+        void poll()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
     poll()
     return () => {
       stopRef.current = true
       if (timer) clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
 
