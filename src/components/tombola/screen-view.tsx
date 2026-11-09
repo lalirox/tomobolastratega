@@ -18,9 +18,12 @@ import type { Phase } from '@/lib/tombola'
 import { Drum } from '@/components/tombola/drum'
 import { QrPanel, SecretQrOverlay, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
-import { AlertOverlay, BrandingOverlay, WinnerOverlay } from '@/components/tombola/overlays'
+import { AlertOverlay, BrandingOverlay, LockOverlay, WinnerOverlay } from '@/components/tombola/overlays'
 import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
 import { isMuted, loadMutePreference, playClick, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
+
+// Tiempo de inactividad antes de bloquear la pantalla grande (3 minutos)
+const IDLE_LOCK_MS = 3 * 60 * 1000
 
 export function ScreenView() {
   const { state, connected, notice, reset } = useTombola('screen')
@@ -35,6 +38,11 @@ export function ScreenView() {
   const [presented, setPresented] = useState(false)
   // QR secreto del jefe (se abre presionando la marca Y del encabezado)
   const [secretQr, setSecretQr] = useState(false)
+  // Pantalla de bloqueo: solo el logo + LA GRAN NOCHE. Se activa con el
+  // botón BLOQUEAR PANTALLA (junto a los QR) o sola tras 3 minutos sin
+  // tocar nada; cualquier toque/tecla o evento del juego la despierta.
+  const [locked, setLocked] = useState(false)
+  const lastActivity = useRef(Date.now())
   // null = aún no llega la primera sincronización del servicio
   const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
@@ -132,6 +140,63 @@ export function ScreenView() {
     return () => clearInterval(id)
   }, [state.phase, state.drawn])
 
+  // ── Bloqueo automático de la pantalla (3 minutos sin movimiento) ──
+  // Registrar TODA interacción: toque, movimiento del mouse, tecla o rueda
+  useEffect(() => {
+    const mark = () => {
+      lastActivity.current = Date.now()
+    }
+    window.addEventListener('pointerdown', mark, { passive: true })
+    window.addEventListener('pointermove', mark, { passive: true })
+    window.addEventListener('keydown', mark, { passive: true })
+    window.addEventListener('wheel', mark, { passive: true })
+    return () => {
+      window.removeEventListener('pointerdown', mark)
+      window.removeEventListener('pointermove', mark)
+      window.removeEventListener('keydown', mark)
+      window.removeEventListener('wheel', mark)
+    }
+  }, [])
+
+  // Si pasan 3 minutos sin tocar nada, la pantalla se bloquea sola
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (Date.now() - lastActivity.current >= IDLE_LOCK_MS) {
+        setLocked(true)
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Despertar: cualquier toque o tecla cuando está bloqueada
+  useEffect(() => {
+    if (!locked) return
+    const wake = () => {
+      setLocked(false)
+      lastActivity.current = Date.now()
+    }
+    window.addEventListener('pointerdown', wake)
+    window.addEventListener('keydown', wake)
+    return () => {
+      window.removeEventListener('pointerdown', wake)
+      window.removeEventListener('keydown', wake)
+    }
+  }, [locked])
+
+  // La tómbola despierta la pantalla: sirena, conteo, giro o número nuevo
+  useEffect(() => {
+    lastActivity.current = Date.now()
+    setLocked((was) => (was ? false : was))
+  }, [state.phase])
+
+  // Bloquear manualmente (botones BLOQUEAR PANTALLA junto a los QR)
+  const lockScreenNow = () => {
+    primeAudio()
+    playClick()
+    setLocked(true)
+    lastActivity.current = Date.now()
+  }
+
   const toggleSound = () => {
     primeAudio()
     const next = !isMuted()
@@ -185,7 +250,16 @@ export function ScreenView() {
 
       {/* QR secreto del jefe: se abre con la marca Y del encabezado y se
           oculta solo a los 10 segundos */}
-      {secretQr && <SecretQrOverlay onClose={() => setSecretQr(false)} />}
+      {secretQr && (
+        <SecretQrOverlay
+          onClose={() => setSecretQr(false)}
+          onLockScreen={lockScreenNow}
+        />
+      )}
+
+      {/* Pantalla de bloqueo: solo el logo + LA GRAN NOCHE. Cualquier
+          toque, tecla o evento de la tómbola la despierta. */}
+      {locked && <LockOverlay />}
 
       {/* Cabecera compacta: logo + letrero + controles */}
       <header className="relative z-20 overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 shadow-inner">
@@ -461,7 +535,7 @@ export function ScreenView() {
             )}
           </section>
 
-          <QrPanel />
+          <QrPanel onLockScreen={lockScreenNow} />
         </div>
       </main>
 

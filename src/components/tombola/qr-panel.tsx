@@ -5,20 +5,23 @@ import QRCode from 'qrcode'
 import {
   Check,
   Copy,
+  Download,
   Lock,
   LockKeyholeOpen,
   Link2,
+  Moon,
   QrCode as QrIcon,
   ShieldCheck,
   Timer,
 } from 'lucide-react'
+import { buildQrPoster, QR_FILENAMES, saveDataUrl } from '@/lib/qr-download'
 
 // Contraseña privada del anfitrión para mostrar el código QR
 const QR_PASSWORD = 'Strategapool_2026'
 // El QR se vuelve a bloquear solo después de estos segundos visibles
 const AUTOLOCK_SECONDS = 10
 
-export function QrPanel() {
+export function QrPanel({ onLockScreen }: { onLockScreen: () => void }) {
   const [qrSrc, setQrSrc] = useState<string | null>(null)
   const [url, setUrl] = useState('')
   const [copied, setCopied] = useState(false)
@@ -26,6 +29,7 @@ export function QrPanel() {
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [pw, setPw] = useState('')
   const [error, setError] = useState(false)
+  const [saving, setSaving] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Generar el QR una sola vez (nunca se muestra sin contraseña)
@@ -93,6 +97,21 @@ export function QrPanel() {
       setTimeout(() => setCopied(false), 1800)
     } catch {
       // sin permisos de portapapeles
+    }
+  }
+
+  // Guarda el QR como PNG fijo (con título y enlace) para tenerlo
+  // impreso o en el celular sin necesidad de entrar al sistema
+  const savePng = async () => {
+    if (!url || saving) return
+    setSaving(true)
+    try {
+      const poster = await buildQrPoster(url, 'CONTROL REMOTO · POSADA 2026')
+      saveDataUrl(poster, QR_FILENAMES.control)
+    } catch {
+      // sin canvas disponible
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -224,13 +243,39 @@ export function QrPanel() {
                   </>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={savePng}
+                disabled={!url || saving}
+                className="inline-flex items-center gap-1.5 rounded-md border-2 border-[#4a3a24] bg-[#e0d5b8] px-3 py-1.5 font-elite text-xs font-bold text-[#33240f] shadow transition hover:bg-[#d4c8a8] active:scale-95 disabled:opacity-60"
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                {saving ? 'Guardando...' : 'Guardar QR (PNG)'}
+              </button>
               <p className="font-elite text-[10px] leading-snug text-[#8a6a3f]">
                 Al cumplirse el tiempo, el QR se oculta solo para que nadie más pueda escanearlo.
+                El PNG guardado sirve siempre: el enlace del QR no cambia.
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Bloquear la pantalla grande: solo se verá el logo y LA GRAN NOCHE */}
+      <div className="mt-3 border-t border-[#cfc3a4] pt-3">
+        <button
+          type="button"
+          onClick={onLockScreen}
+          title="Apaga la vista de la tómbola: solo se verá el logo y «LA GRAN NOCHE». Toca la pantalla o presiona una tecla para regresar."
+          className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-[#4a3a24] bg-[#241608] px-3 py-2.5 font-elite text-xs font-bold tracking-[0.22em] text-[#e8c877] shadow transition hover:bg-[#33200f] active:scale-95"
+        >
+          <Moon className="h-4 w-4" aria-hidden="true" />
+          BLOQUEAR PANTALLA
+        </button>
+        <p className="mt-1.5 text-center font-elite text-[10px] leading-snug text-[#8a6a3f]">
+          También se bloquea sola tras 3 minutos sin movimiento. Toca la pantalla para despertarla.
+        </p>
+      </div>
     </section>
   )
 }
@@ -256,10 +301,17 @@ export function Studs() {
 
 const SECRET_SECONDS = 10
 
-export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
+export function SecretQrOverlay({
+  onClose,
+  onLockScreen,
+}: {
+  onClose: () => void
+  onLockScreen: () => void
+}) {
   const [qrSrc, setQrSrc] = useState<string | null>(null)
   const [url, setUrl] = useState('')
   const [secondsLeft, setSecondsLeft] = useState(SECRET_SECONDS)
+  const [saving, setSaving] = useState(false)
 
   // Ref siempre fresco para usarlo en timers sin re-crear efectos
   const closeRef = useRef(onClose)
@@ -302,6 +354,28 @@ export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
   }, [secondsLeft])
 
   const progress = (secondsLeft / SECRET_SECONDS) * 100
+
+  // Guarda el QR del jefe como PNG fijo (quede guardado aunque el
+  // cartel se oculte a los 10 segundos)
+  const savePng = async () => {
+    if (!url || saving) return
+    setSaving(true)
+    try {
+      const poster = await buildQrPoster(url, 'LA LISTA DEL JEFE · POSADA 2026')
+      saveDataUrl(poster, QR_FILENAMES.lista)
+    } catch {
+      // sin canvas disponible
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Bloquea la pantalla grande y cierra este cartel
+  const lockNow = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onLockScreen()
+    closeRef.current()
+  }
 
   return (
     <div
@@ -357,6 +431,31 @@ export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
             Se oculta en {secondsLeft}s
           </p>
         </div>
+        {/* Acciones del jefe: guardar el QR fijo o bloquear la pantalla */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              savePng()
+            }}
+            disabled={!url || saving}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border-2 border-[#4a3a24] bg-[#e0d5b8] px-2 py-2 font-elite text-[11px] font-bold text-[#33240f] shadow transition hover:bg-[#d4c8a8] active:scale-95 disabled:opacity-60"
+          >
+            <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {saving ? 'Guardando...' : 'Guardar QR'}
+          </button>
+          <button
+            type="button"
+            onClick={lockNow}
+            title="Apaga la vista de la tómbola: solo se verá el logo y «LA GRAN NOCHE»."
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border-2 border-[#4a3a24] bg-[#241608] px-2 py-2 font-elite text-[11px] font-bold tracking-wide text-[#e8c877] shadow transition hover:bg-[#33200f] active:scale-95"
+          >
+            <Moon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            BLOQUEAR PANTALLA
+          </button>
+        </div>
+
         <p className="mt-2 font-elite text-[10px] tracking-[0.3em] text-[#8a6a3f]">
           TOCA PARA CERRAR
         </p>

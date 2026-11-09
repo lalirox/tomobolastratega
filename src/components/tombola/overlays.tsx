@@ -8,6 +8,7 @@ import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 //  · AlertOverlay     → sirena visual del rancho (botón del celular)
 //  · WinnerOverlay    → número ganador ocupando toda la pantalla (20 s)
 //  · BrandingOverlay  → POSADA STRATEGA CONSULTORES 2026 (resting screen)
+//  · LockOverlay      → reposo: solo el logo + LA GRAN NOCHE
 // ─────────────────────────────────────────────────────────────
 
 /** Alerta a pantalla completa con parpadeo rojo/dorado del rancho (fase 'alert') */
@@ -143,6 +144,38 @@ export function BrandingOverlay() {
           2026
         </p>
         <BrandY className="mt-3 h-10 w-10 opacity-90 sm:h-14 sm:w-14" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Pantalla de bloqueo (reposo/salvapantallas): SOLO el logo de Stratega
+ * y el letrero LA GRAN NOCHE — sin ningún otro adorno del rancho.
+ * Se activa con el botón BLOQUEAR PANTALLA (junto a los QR) o sola
+ * después de 3 minutos sin tocar nada. Cualquier toque o tecla la
+ * despierta y regresa a la tómbola.
+ */
+export function LockOverlay() {
+  return (
+    <div
+      className="animate-fade-in fixed inset-0 z-[90] flex items-center justify-center overflow-hidden bg-[#070402]"
+      role="status"
+      aria-label="Pantalla en reposo: La Gran Noche"
+    >
+      {/* Resplandor dorado tenue que respira detrás del logo */}
+      <div
+        className="absolute left-1/2 top-1/2 h-[95vmin] w-[95vmin] -translate-x-1/2 -translate-y-1/2"
+        aria-hidden="true"
+      >
+        <div className="lock-halo h-full w-full rounded-full" />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center gap-8 sm:gap-12">
+        <StrategaLogo className="lock-breathe h-44 w-44 object-contain drop-shadow-[0_0_50px_rgba(232,200,119,.45)] sm:h-72 sm:w-72" />
+        <p className="lock-glow font-rye text-[clamp(44px,9vw,140px)] leading-none tracking-[0.06em] text-[#f3d27a]">
+          LA GRAN NOCHE
+        </p>
       </div>
     </div>
   )

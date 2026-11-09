@@ -353,3 +353,49 @@
 .animate-fade-in {
   animation: fade-in-kf 0.25s ease-out both;
 }
+
+/* western theme v6 · pantalla de bloqueo (solo logo + LA GRAN NOCHE) */
+
+/* ── Respiración lenta del logo y del halo dorado ── */
+@keyframes lock-breathe-kf {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.045);
+    opacity: 1;
+  }
+}
+.lock-breathe {
+  animation: lock-breathe-kf 6s ease-in-out infinite;
+}
+
+.lock-halo {
+  background: radial-gradient(
+    circle,
+    rgba(201, 162, 39, 0.15) 0%,
+    rgba(201, 162, 39, 0.05) 42%,
+    transparent 68%
+  );
+  animation: lock-breathe-kf 7s ease-in-out infinite;
+}
+
+/* ── Brillo suave del letrero LA GRAN NOCHE ── */
+@keyframes lock-glow-kf {
+  0%,
+  100% {
+    text-shadow:
+      0 0 26px rgba(201, 162, 39, 0.35),
+      0 4px 0 rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    text-shadow:
+      0 0 52px rgba(232, 200, 119, 0.62),
+      0 4px 0 rgba(0, 0, 0, 0.55);
+  }
+}
+.lock-glow {
+  animation: lock-glow-kf 6s ease-in-out infinite;
+}
