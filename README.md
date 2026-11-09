@@ -2,7 +2,7 @@
 
 Tómbola web western (tema Yellowstone) para proyectar en pantalla grande y
 controlar desde el celular. 100 números, tambor girando, historial, marcador,
-sirena de alerta, protector de pantalla y códigos QR fijos.
+sirena de alerta y protector de pantalla.
 
 ## Vistas
 
@@ -11,13 +11,24 @@ sirena de alerta, protector de pantalla y códigos QR fijos.
 | 🖥️ Pantalla grande | `/` | Se proyecta: tambor, historial, marcador, ganador a pantalla completa |
 | 📱 Control remoto | `/?control` | El celular del anfitrión: CANTAR NÚMERO, MANDAR ALERTA, BLOQUEAR PANTALLA |
 | 🤠 La lista del jefe | `/?lista` | Privado: programa los números que saldrán (orden exacto) |
-| 📄 Carteles QR | `/qr` | Página con los 2 QR fijos para imprimir o guardar (PNG) |
 
-QRs fijos (el enlace nunca cambia): `/api/qr/control.png` y `/api/qr/lista.png`
-(agrega `?download` para descargarlos directo).
+## Los QR guardados no cambian nunca
 
-- Tocar el **logo** en el encabezado de la pantalla grande → QR del control remoto (10 s).
-- Presionar la marca **Y** → QR maestro del jefe (10 s, sin pistas visibles).
+Los códigos QR ya están impresos/guardados fuera del sistema, así que la web
+ya no muestra ningún QR. Lo que garantiza que sigan sirviendo para siempre:
+
+- Las **rutas de destino son permanentes**: `/?control` y `/?lista`.
+  No se renombran ni se eliminan en ninguna versión futura.
+- Si algún día necesitas volver a generar los PNG (por ejemplo si cambias de
+  dominio en Vercel), siguen disponibles en:
+  `TU-DOMINIO/api/qr/control.png?download=1` y `TU-DOMINIO/api/qr/lista.png?download=1`.
+  El QR se genera con el dominio por el que entres, apuntando siempre a esas
+  mismas rutas.
+
+> Nota: si tus QR guardados se generaron con un dominio distinto al de la
+> instalación final (por ejemplo el de pruebas), vuelve a descargar los PNG
+> desde el dominio definitivo una vez desplegado en Vercel.
+
 - **BLOQUEAR PANTALLA** (solo en el celular) → la pantalla grande pasa a reposo:
   logo + LA GRAN NOCHE + POSADA STRATEGA CONSULTORES 2026. También se activa
   sola tras 3 minutos sin tocar nada; cualquier toque la despierta.

@@ -41,6 +41,18 @@ export function BrandY({ className = '' }: { className?: string }) {
   )
 }
 
+/** Tachuelas de las esquinas, estilo cartel */
+export function Studs() {
+  return (
+    <>
+      <span className="stud left-1.5 top-1.5" aria-hidden="true" />
+      <span className="stud right-1.5 top-1.5" aria-hidden="true" />
+      <span className="stud bottom-1.5 left-1.5" aria-hidden="true" />
+      <span className="stud bottom-1.5 right-1.5" aria-hidden="true" />
+    </>
+  )
+}
+
 /** Silueta de montañas, guiño al paisaje de Montana */
 export function MountainRidge({ className = '' }: { className?: string }) {
   return (

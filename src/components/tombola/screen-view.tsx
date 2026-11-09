@@ -16,11 +16,10 @@ import {
 import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
 import { Drum } from '@/components/tombola/drum'
-import { ControlQrOverlay, QrPanel, SecretQrOverlay, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
 import { AlertOverlay, BrandingOverlay, LockOverlay, WinnerOverlay } from '@/components/tombola/overlays'
-import { BrandY, MountainRidge, StrategaLogo } from '@/components/tombola/brand'
-import { isMuted, loadMutePreference, playClick, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
+import { MountainRidge, StrategaLogo, Studs } from '@/components/tombola/brand'
+import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
 
 // Tiempo de inactividad antes de bloquear la pantalla grande (3 minutos)
 const IDLE_LOCK_MS = 3 * 60 * 1000
@@ -36,10 +35,6 @@ export function ScreenView() {
   // Presentación del número ya terminada (overlay cerrado o alerta mandada):
   // el cuerpo de la pantalla vuelve a verse como la vista original de reposo
   const [presented, setPresented] = useState(false)
-  // QR secreto del jefe (se abre presionando la marca Y del encabezado)
-  const [secretQr, setSecretQr] = useState(false)
-  // QR del control remoto (se abre tocando el logo del encabezado)
-  const [controlQr, setControlQr] = useState(false)
   // Pantalla de bloqueo (protector): logo + LA GRAN NOCHE + POSADA
   // STRATEGA CONSULTORES 2026. Se activa con BLOQUEAR PANTALLA desde el
   // celular del anfitrión o sola tras 3 minutos sin tocar nada; cualquier
@@ -261,22 +256,6 @@ export function ScreenView() {
       {/* Pantalla de marca: permanece hasta la próxima alerta o número */}
       {branding && state.phase === 'revealed' && <BrandingOverlay />}
 
-      {/* QR del control remoto: se abre tocando el logo del encabezado;
-          es el QR que convierte un celular en el control de la tómbola */}
-      {controlQr && (
-        <ControlQrOverlay
-          onClose={() => setControlQr(false)}
-        />
-      )}
-
-      {/* QR secreto del jefe: se abre con la marca Y del encabezado y se
-          oculta solo a los 10 segundos */}
-      {secretQr && (
-        <SecretQrOverlay
-          onClose={() => setSecretQr(false)}
-        />
-      )}
-
       {/* Pantalla de bloqueo: solo el logo + LA GRAN NOCHE. Cualquier
           toque, tecla o evento de la tómbola la despierta. */}
       {locked && <LockOverlay />}
@@ -284,38 +263,7 @@ export function ScreenView() {
       {/* Cabecera compacta: logo + letrero + controles */}
       <header className="relative z-20 overflow-hidden border-b-4 border-[#6e1a14] bg-[#0d0a06]/90 shadow-inner">
         <div className="mx-auto flex w-full max-w-[1700px] flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 sm:px-5">
-          {/* El LOGO abre el QR del control remoto (el que hace girar la
-              tómbola desde el celular) por 10 segundos */}
-          <button
-            type="button"
-            onClick={() => {
-              primeAudio()
-              playClick()
-              setControlQr(true)
-              setSecretQr(false)
-            }}
-            aria-label="Mostrar el QR del control remoto"
-            title="Toca el logo para mostrar el QR del control remoto"
-            className="shrink-0 transition-transform active:scale-90"
-          >
-            <StrategaLogo className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14" />
-          </button>
-          {/* Botón secreto: la marca Y abre el QR MAESTRO del jefe (para
-              programar los números que saldrán) por 10 s. Sin texto ni
-              pistas visibles: solo el anfitrión lo conoce. */}
-          <button
-            type="button"
-            onClick={() => {
-              primeAudio()
-              playClick()
-              setSecretQr(true)
-              setControlQr(false)
-            }}
-            aria-label="Acceso secreto del jefe"
-            className="shrink-0 transition-transform active:scale-90"
-          >
-            <BrandY className="h-9 w-9 shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.8)] sm:h-11 sm:w-11" />
-          </button>
+          <StrategaLogo className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14" />
           <div className="min-w-0">
             <h1 className="font-rye text-lg leading-tight tracking-wide text-[#e6d9b8] drop-shadow-[0_3px_0_rgba(0,0,0,.8)] sm:text-2xl">
               TÓMBOLA DEL RANCHO
@@ -539,10 +487,10 @@ export function ScreenView() {
           </section>
         </div>
 
-        {/* ── Últimos cantados + QR protegido: bajo el cartel en pantallas
-            medianas y como columna derecha en pantallas grandes (2xl), para
-            que el tambor domine el centro de la proyección ── */}
-        <div className="order-3 grid w-full gap-4 lg:col-span-2 lg:grid-cols-2 2xl:sticky 2xl:top-3 2xl:col-span-1 2xl:grid-cols-1">
+        {/* ── Últimos cantados: bajo el cartel en pantallas medianas y como
+            columna derecha en pantallas grandes (2xl), para que el tambor
+            domine el centro de la proyección ── */}
+        <div className="order-3 w-full lg:col-span-2 2xl:col-span-1">
           <section
             className="rounded-md border-2 border-[#6b4423] bg-[#1c1208]/85 p-4 shadow-[0_10px_24px_rgba(0,0,0,.45)]"
             aria-label="Últimos números cantados"
@@ -571,8 +519,6 @@ export function ScreenView() {
               </ul>
             )}
           </section>
-
-          <QrPanel />
         </div>
       </main>
 

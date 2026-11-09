@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
-import { Studs } from '@/components/tombola/qr-panel'
+import { Studs } from '@/components/tombola/brand'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 

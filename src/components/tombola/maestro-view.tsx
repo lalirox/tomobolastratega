@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, Eraser, KeyRound, ListOrdered, Moon, Wifi, WifiOff } from 'lucide-react'
 import { useTombola } from '@/hooks/use-tombola'
-import { Studs } from '@/components/tombola/qr-panel'
+import { Studs } from '@/components/tombola/brand'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { playClick, primeAudio } from '@/lib/sounds'
 
