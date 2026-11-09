@@ -307,7 +307,7 @@ export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
     <div
       className="animate-fade-in fixed inset-0 z-[80] flex items-center justify-center overflow-hidden bg-[#070402]/95 p-4"
       role="dialog"
-      aria-label="Código QR secreto de la lista del jefe"
+      aria-label="Código QR privado"
       onClick={() => closeRef.current()}
     >
       {/* Rayos dorados girando detrás del cartel */}
@@ -318,19 +318,17 @@ export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <Studs />
-        <p className="font-elite text-xs font-bold tracking-[0.35em] text-[#8b1a1a]">
-          🔒 SOLO PARA EL JEFE
-        </p>
-        <h2 className="mt-1 font-rye text-2xl text-[#33240f] sm:text-3xl">LA LISTA DEL JEFE</h2>
-        <p className="mt-1 font-elite text-sm leading-snug text-[#5a4626]">
-          Escanea y decide qué números del 1 al 100 saldrán del tambor
-        </p>
+        {/* Discreto a propósito: no revela qué hace ni a dónde lleva */}
+        <div className="flex items-center justify-center gap-2">
+          <Lock className="h-5 w-5 shrink-0 text-[#8b1a1a]" aria-hidden="true" />
+          <h2 className="font-rye text-xl text-[#33240f] sm:text-2xl">SOLO PARA EL JEFE</h2>
+        </div>
 
         <div className="mx-auto mt-4 w-fit rounded-md border-4 border-double border-[#4a3a24] bg-[#f0e8d2] p-2 shadow-inner">
           {qrSrc ? (
             <img
               src={qrSrc}
-              alt="Código QR secreto para abrir la lista del jefe en el celular"
+              alt="Código QR privado"
               className="h-48 w-48 sm:h-56 sm:w-56"
             />
           ) : (
@@ -339,8 +337,6 @@ export function SecretQrOverlay({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-
-        <p className="mt-3 break-all font-elite text-xs text-[#5a4626]">{url || '...'}</p>
 
         {/* Cuenta regresiva antes de ocultarse */}
         <div className="mt-4" role="timer" aria-live="off">

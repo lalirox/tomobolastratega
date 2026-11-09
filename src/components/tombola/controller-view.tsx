@@ -14,15 +14,17 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
+import type { Phase } from '@/lib/tombola'
 import { Studs } from '@/components/tombola/qr-panel'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
   const { state, connected, notice, press, sendAlert, reset } = useTombola('controller')
-  const prevPhase = useRef(state.phase)
+  // null = aún no llega la primera sincronización del servicio
+  const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
-  const prevAlertSeq = useRef(state.alertSeq)
+  const prevAlertSeq = useRef<number | null>(null)
 
   // Desbloquear audio en el primer toque
   useEffect(() => {
@@ -44,8 +46,14 @@ export function ControllerView() {
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown])
 
-  // Sirena + vibración cada vez que se manda una alerta (alertSeq cambia)
+  // Sirena + vibración cada vez que se manda una alerta (alertSeq cambia).
+  // En la primera sincronización solo se toma el contador: al (re)cargar el
+  // control después de alertas anteriores NO vuelve a sonar la sirena.
   useEffect(() => {
+    if (prevAlertSeq.current === null) {
+      prevAlertSeq.current = state.alertSeq
+      return
+    }
     if (state.alertSeq !== prevAlertSeq.current) {
       if (state.alertSeq > 0) {
         playSiren()
@@ -59,7 +67,13 @@ export function ControllerView() {
     }
   }, [state.alertSeq])
 
+  // Sonidos/vibración solo con cambios reales de fase: la primera
+  // sincronización no dispara fanfarria aunque el juego esté en 'revealed'
   useEffect(() => {
+    if (prevPhase.current === null) {
+      prevPhase.current = state.phase
+      return
+    }
     if (state.phase !== prevPhase.current) {
       if (state.phase === 'spinning') {
         playRoll()

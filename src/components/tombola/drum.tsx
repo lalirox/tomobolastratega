@@ -33,7 +33,7 @@ export function Drum({ phase, countdown, flicker, lastNumber = null }: DrumProps
   const revealed = phase === 'revealed' && lastNumber !== null
 
   return (
-    <div className="relative mx-auto w-[min(88vw,380px)] select-none sm:w-[min(62vw,460px)] lg:w-[min(38vw,54dvh,560px)]">
+    <div className="relative mx-auto w-[min(88vw,380px)] select-none sm:w-[min(62vw,460px)] lg:w-[min(42vw,58dvh,680px)] xl:w-[min(46vw,62dvh,820px)] 2xl:w-[min(52vw,66dvh,980px)]">
       {/* Manivela decorativa */}
       <div className="absolute -right-6 top-1/2 z-40 -translate-y-1/2 sm:-right-8">
         <div

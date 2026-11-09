@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
+import type { Phase } from '@/lib/tombola'
 import { Drum } from '@/components/tombola/drum'
 import { QrPanel, SecretQrOverlay, Studs } from '@/components/tombola/qr-panel'
 import { HistoryGrid } from '@/components/tombola/history-grid'
@@ -29,11 +30,15 @@ export function ScreenView() {
   const [winnerNumber, setWinnerNumber] = useState<number | null>(null)
   // Pantalla de marca POSADA STRATEGA CONSULTORES 2026 (tras los 20 s del ganador)
   const [branding, setBranding] = useState(false)
+  // Presentación del número ya terminada (overlay cerrado o alerta mandada):
+  // el cuerpo de la pantalla vuelve a verse como la vista original de reposo
+  const [presented, setPresented] = useState(false)
   // QR secreto del jefe (se abre presionando la marca Y del encabezado)
   const [secretQr, setSecretQr] = useState(false)
-  const prevPhase = useRef(state.phase)
+  // null = aún no llega la primera sincronización del servicio
+  const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
-  const prevAlertSeq = useRef(state.alertSeq)
+  const prevAlertSeq = useRef<number | null>(null)
 
   // Audio: se activa tras el primer toque en la pantalla (política del navegador)
   useEffect(() => {
@@ -51,8 +56,14 @@ export function ScreenView() {
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown])
 
-  // Sirena cada vez que el anfitrión manda una alerta (alertSeq cambia)
+  // Sirena cada vez que el anfitrión manda una alerta (alertSeq cambia).
+  // En la primera sincronización solo se toma el contador: si la página se
+  // (re)carga después de haber mandado alertas, NO vuelve a sonar la sirena.
   useEffect(() => {
+    if (prevAlertSeq.current === null) {
+      prevAlertSeq.current = state.alertSeq
+      return
+    }
     if (state.alertSeq !== prevAlertSeq.current) {
       if (state.alertSeq > 0) playSiren()
       prevAlertSeq.current = state.alertSeq
@@ -60,24 +71,49 @@ export function ScreenView() {
   }, [state.alertSeq])
 
   // Redoble al girar y fanfarria al revelar. El overlay del ganador SOLO se
-  // muestra cuando la tómbola canta un número nuevo: si se manda una alerta
-  // durante 'revealed', al terminar la sirena NO vuelve a pantalla completa.
+  // abre con un número recién cantado (la fase llega de countdown/spinning):
+  // si se manda una alerta durante 'revealed', al terminar la sirena la
+  // pantalla regresa a su vista original; si la página se recarga o se
+  // reconecta a mitad de la presentación, NO se vuelve a abrir el ganador.
   // Al cerrarse el ganador (20 s o toque) entra la pantalla de marca, que se
   // quita cuando se manda una alerta o un número nuevo.
   useEffect(() => {
+    // Primera sincronización con el servicio: si la pantalla se carga cuando
+    // el juego ya está en 'revealed', se toma como presentación terminada
+    // (vista original con el historial), nunca se reabre el overlay
+    if (prevPhase.current === null) {
+      prevPhase.current = state.phase
+      if (state.phase === 'revealed') {
+        queueMicrotask(() => setPresented(true))
+      }
+      return
+    }
     if (state.phase !== prevPhase.current) {
       if (state.phase === 'revealed') {
-        if (prevPhase.current !== 'alert') {
-          queueMicrotask(() => setWinnerNumber(state.lastNumber))
+        if (prevPhase.current === 'countdown' || prevPhase.current === 'spinning') {
+          // Número recién cantado: la presentación arranca de cero
+          queueMicrotask(() => {
+            setWinnerNumber(state.lastNumber)
+            setPresented(false)
+          })
+          playFanfare()
+        } else {
+          // Entrada a 'revealed' por recarga/reconexión/sincronización (no
+          // por un giro real): la presentación ya pasó, la pantalla muestra
+          // su vista original con el historial, nunca el overlay del ganador
+          queueMicrotask(() => setPresented(true))
         }
+        // Si venimos de 'alert' NO se reabre el ganador: ya se presentó
       } else {
         queueMicrotask(() => {
           setWinnerNumber(null)
           setBranding(false)
+          // La alerta corta la presentación: al apagarse la sirena la
+          // pantalla grande muestra su vista original, no el último número
+          if (state.phase === 'alert') setPresented(true)
         })
       }
       if (state.phase === 'spinning') playRoll()
-      if (state.phase === 'revealed') playFanfare()
       prevPhase.current = state.phase
     }
   }, [state.phase, state.lastNumber])
@@ -106,6 +142,13 @@ export function ScreenView() {
   const recent = [...state.drawn].reverse().slice(0, 12)
   const pct = Math.round((state.drawn.length / state.total) * 100)
 
+  // Fase que pinta el cuerpo de la pantalla: cuando el número ya se presentó
+  // (overlay cerrado, alerta mandada o recarga de la página), la vista es la
+  // original de reposo aunque la fase real siga siendo 'revealed' para
+  // permitir la siguiente tirada
+  const displayPhase =
+    state.phase === 'revealed' && presented ? 'idle' : state.phase
+
   return (
     <div className="wood-bg flex min-h-dvh flex-col text-[#f3e6c3]">
       {/* Aviso temporal (busy / empty) */}
@@ -132,6 +175,7 @@ export function ScreenView() {
             onClose={() => {
               setWinnerNumber(null)
               setBranding(true)
+              setPresented(true)
             }}
           />
         )}
@@ -250,9 +294,9 @@ export function ScreenView() {
       </header>
 
       {/* Cuerpo: panel lateral izquierdo + zona central con la tómbola */}
-      <main className="mx-auto grid w-full max-w-[1700px] flex-1 gap-4 px-3 py-4 sm:px-5 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] lg:items-start xl:grid-cols-[380px_minmax(0,1fr)]">
+      <main className="mx-auto grid w-full max-w-[1700px] flex-1 gap-4 px-3 py-4 sm:px-5 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] lg:items-start xl:grid-cols-[380px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)_360px]">
         {/* ── Panel lateral izquierdo: marcador + historial completo ── */}
-        <aside className="order-2 flex flex-col gap-4 lg:order-1 lg:sticky lg:top-3 lg:max-h-[calc(100dvh-1.5rem)]">
+        <aside className="order-2 flex flex-col gap-4 lg:order-1 lg:sticky lg:top-3 lg:max-h-[calc(100dvh-9.5rem)]">
           <section
             className="rounded-md border-2 border-[#6b4423] bg-[#1c1208]/90 p-3 shadow-[0_10px_24px_rgba(0,0,0,.45)]"
             aria-label="Marcador del rancho"
@@ -316,10 +360,10 @@ export function ScreenView() {
           />
         </aside>
 
-        {/* ── Zona central: tambor protagonista + cartel del resultado ── */}
+        {/* ── Zona central: tambor protagonista ocupando el centro + cartel ── */}
         <div className="order-1 flex min-w-0 flex-col items-center gap-4 lg:order-2">
           <Drum
-            phase={state.phase}
+            phase={displayPhase}
             countdown={state.countdown}
             flicker={flicker}
             lastNumber={state.lastNumber}
@@ -331,7 +375,7 @@ export function ScreenView() {
             aria-live="polite"
           >
             <Studs />
-            {state.phase === 'revealed' && state.lastNumber !== null ? (
+            {displayPhase === 'revealed' && state.lastNumber !== null ? (
               <>
                 <p className="font-elite text-sm uppercase tracking-[0.3em] text-[#8b1a1a]">
                   ¡Se cantó el número!
@@ -346,21 +390,21 @@ export function ScreenView() {
                   Fue el número <strong>#{state.drawn.length}</strong> de la ronda
                 </p>
               </>
-            ) : state.phase === 'alert' ? (
+            ) : displayPhase === 'alert' ? (
               <>
                 <p className="font-rye text-3xl text-[#8b1a1a] sm:text-4xl">⚠ ¡Alerta! ⚠</p>
                 <p className="mt-1 font-elite text-sm text-[#5a3a1c]">
                   La nueva rifa está por comenzar...
                 </p>
               </>
-            ) : state.phase === 'spinning' ? (
+            ) : displayPhase === 'spinning' ? (
               <>
                 <p className="font-rye text-3xl text-[#8b1a1a] sm:text-4xl">¡Girando el tambor!</p>
                 <p className="mt-1 font-elite text-sm text-[#5a3a1c]">
                   La bola está por caer...
                 </p>
               </>
-            ) : state.phase === 'countdown' ? (
+            ) : displayPhase === 'countdown' ? (
               <>
                 <p className="font-rye text-3xl text-[#8b1a1a] sm:text-4xl">
                   Cantando en {state.countdown}...
@@ -382,40 +426,42 @@ export function ScreenView() {
               </>
             )}
           </section>
+        </div>
 
-          {/* Últimos cantados + QR protegido */}
-          <div className="grid w-full gap-4 xl:grid-cols-2">
-            <section
-              className="rounded-md border-2 border-[#6b4423] bg-[#1c1208]/85 p-4 shadow-[0_10px_24px_rgba(0,0,0,.45)]"
-              aria-label="Últimos números cantados"
-            >
-              <h2 className="mb-3 font-rye text-lg text-[#f3d27a]">Últimos cantados</h2>
-              {recent.length === 0 ? (
-                <p className="font-elite text-sm text-[#c9a97a]">
-                  Aún no ha caído ninguna bola. ¡Presiona el botón rojo!
-                </p>
-              ) : (
-                <ul className="flex flex-wrap gap-2">
-                  {recent.map((n, i) => (
-                    <li
-                      key={`${n}-${i}`}
-                      className={`flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 font-elite font-bold shadow ${
-                        i === 0
-                          ? 'animate-pop border-[#c9a227] bg-gradient-to-b from-[#e0bd6a] to-[#c9a227] text-[#2b1a0c]'
-                          : 'border-[#9c8a66] bg-[#f3e6c3] text-[#3b2314]'
-                      }`}
-                      title={i === 0 ? 'Último número cantado' : `Anterior: hace ${i}`}
-                    >
-                      <span className="text-[8px] leading-none opacity-70">#{state.drawn.length - i}</span>
-                      <span className="text-sm leading-tight">{n}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+        {/* ── Últimos cantados + QR protegido: bajo el cartel en pantallas
+            medianas y como columna derecha en pantallas grandes (2xl), para
+            que el tambor domine el centro de la proyección ── */}
+        <div className="order-3 grid w-full gap-4 lg:col-span-2 lg:grid-cols-2 2xl:sticky 2xl:top-3 2xl:col-span-1 2xl:grid-cols-1">
+          <section
+            className="rounded-md border-2 border-[#6b4423] bg-[#1c1208]/85 p-4 shadow-[0_10px_24px_rgba(0,0,0,.45)]"
+            aria-label="Últimos números cantados"
+          >
+            <h2 className="mb-3 font-rye text-lg text-[#f3d27a]">Últimos cantados</h2>
+            {recent.length === 0 ? (
+              <p className="font-elite text-sm text-[#c9a97a]">
+                Aún no ha caído ninguna bola. ¡Presiona el botón rojo!
+              </p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {recent.map((n, i) => (
+                  <li
+                    key={`${n}-${i}`}
+                    className={`flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 font-elite font-bold shadow ${
+                      i === 0
+                        ? 'animate-pop border-[#c9a227] bg-gradient-to-b from-[#e0bd6a] to-[#c9a227] text-[#2b1a0c]'
+                        : 'border-[#9c8a66] bg-[#f3e6c3] text-[#3b2314]'
+                    }`}
+                    title={i === 0 ? 'Último número cantado' : `Anterior: hace ${i}`}
+                  >
+                    <span className="text-[8px] leading-none opacity-70">#{state.drawn.length - i}</span>
+                    <span className="text-sm leading-tight">{n}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-            <QrPanel />
-          </div>
+          <QrPanel />
         </div>
       </main>
 

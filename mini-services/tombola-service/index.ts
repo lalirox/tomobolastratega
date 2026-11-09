@@ -41,8 +41,6 @@ const state: GameState = {
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let spinTimer: ReturnType<typeof setTimeout> | null = null
 let alertTimer: ReturnType<typeof setTimeout> | null = null
-// Fase a la que se regresa cuando termina la alerta ('idle' o 'revealed')
-let phaseBeforeAlert: Phase = 'idle'
 
 function snapshot(): GameState {
   return {
@@ -79,11 +77,12 @@ function clearTimers() {
 /**
  * ALERTA manual: el anfitrión la manda desde su celular con el botón
  * "MANDAR ALERTA". Suena la sirena en todas las pantallas y, al acabar,
- * se regresa a la fase en la que estábamos (idle o revealed).
+ * el juego regresa SIEMPRE a 'idle': la pantalla grande muestra su vista
+ * original de reposo (el tambor listo) con el historial intacto, nunca la
+ * pantalla del último número cantado.
  */
 function startAlert(): 'ok' | 'busy' {
   if (state.phase === 'countdown' || state.phase === 'spinning') return 'busy'
-  phaseBeforeAlert = state.phase === 'revealed' ? 'revealed' : 'idle'
   state.phase = 'alert'
   state.alertSeq += 1
   if (alertTimer) clearTimeout(alertTimer)
@@ -92,8 +91,9 @@ function startAlert(): 'ok' | 'busy' {
 
   alertTimer = setTimeout(() => {
     alertTimer = null
-    state.phase = phaseBeforeAlert
+    state.phase = 'idle'
     broadcast()
+    console.log('Alerta terminada: regreso a la pantalla original (idle)')
   }, ALERT_MS)
 
   return 'ok'
@@ -168,7 +168,6 @@ function resetGame() {
   state.lastNumber = null
   state.remaining = TOTAL_NUMBERS
   state.fixedQueue = []
-  phaseBeforeAlert = 'idle'
   broadcast()
   console.log('Juego reiniciado')
 }
