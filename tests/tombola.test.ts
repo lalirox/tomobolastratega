@@ -157,6 +157,25 @@ describe('motor del juego', () => {
     expect(state.locked).toBe(true)
   })
 
+  test('unlock devuelve la pantalla a la tómbola (lo usa el auto-bloqueo)', () => {
+    let state = applyAction(freshState(), 'lock', {}, T).state
+    expect(state.locked).toBe(true)
+    state = applyAction(state, 'unlock', {}, T).state
+    expect(state.locked).toBe(false)
+    expect(state.lockSeq).toBe(2)
+  })
+
+  test('el auto-bloqueo de la pantalla se refleja en el estado compartido', () => {
+    // La pantalla avisa con "lock" al bloquearse sola (3 min sin actividad),
+    // así el botón del celular sabe que está en reposo y puede despertarla.
+    const auto = applyAction(freshState(), 'lock', {}, T).state
+    expect(auto.locked).toBe(true)
+    // …y el celular la devuelve con una sola pulsación
+    const despierta = applyAction(auto, 'toggleLock', {}, T).state
+    expect(despierta.locked).toBe(false)
+    expect(despierta.phase).toBe('idle')
+  })
+
   test('cantar despierta la pantalla aunque estuviera bloqueada', () => {
     const bloqueada = applyAction(freshState(), 'toggleLock', {}, T).state
     expect(bloqueada.locked).toBe(true)

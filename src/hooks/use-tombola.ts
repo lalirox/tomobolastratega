@@ -127,6 +127,11 @@ export function useTombola(role: Role) {
   // así el botón de la pantalla y el del celular siempre coinciden.
   const toggleLock = useCallback(() => void send('toggleLock'), [send])
 
+  // La pantalla avisa cuando se bloquea sola (3 min de inactividad) o
+  // cuando la despiertan, para que el celular sepa siempre si está en
+  // reposo y su botón pueda devolverla a la tómbola.
+  const unlockScreen = useCallback(() => void send('unlock'), [send])
+
   const reset = useCallback(() => void send('reset'), [send])
 
   // El jefe programa la lista de números que saldrán (modo dirigido)
@@ -145,6 +150,7 @@ export function useTombola(role: Role) {
     reset,
     sendQueue,
     lockScreen,
+    unlockScreen,
     toggleLock,
   }
 }

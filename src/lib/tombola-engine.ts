@@ -15,7 +15,7 @@ export const SPIN_MS = 1900
 // Duración de la sirena visual/sonora cuando el anfitrión manda la alerta
 export const ALERT_MS = 3500
 
-export type ActionName = 'press' | 'alert' | 'lock' | 'toggleLock' | 'reset' | 'setQueue'
+export type ActionName = 'press' | 'alert' | 'lock' | 'unlock' | 'toggleLock' | 'reset' | 'setQueue'
 export type ActionResult = 'ok' | 'busy' | 'empty'
 
 export interface ActionPayload {
@@ -196,6 +196,16 @@ export function applyAction(
       // BLOQUEAR PANTALLA desde el celular: la pantalla grande pasa a reposo
       return {
         state: { ...state, lockSeq: state.lockSeq + 1, locked: true },
+        result: 'ok',
+      }
+    }
+
+    case 'unlock': {
+      // DESBLOQUEAR PANTALLA: la devuelve a la tómbola. Lo usa el botón del
+      // anfitrión y también la propia pantalla cuando la despiertan (así el
+      // celular sabe siempre si está en reposo o no).
+      return {
+        state: { ...state, lockSeq: state.lockSeq + 1, locked: false },
         result: 'ok',
       }
     }

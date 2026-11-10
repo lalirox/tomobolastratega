@@ -27,7 +27,8 @@ import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick
 const IDLE_LOCK_MS = 3 * 60 * 1000
 
 export function ScreenView() {
-  const { state, connected, notice, reset, store } = useTombola('screen')
+  const { state, connected, notice, reset, store, lockScreen, unlockScreen } =
+    useTombola('screen')
   const [muted, setMutedState] = useState(true)
   const [flicker, setFlicker] = useState<number | null>(null)
   // Número cuyo overlay fullscreen se está mostrando (null = no mostrar)
@@ -181,22 +182,35 @@ export function ScreenView() {
     }
   }, [])
 
-  // Si pasan 3 minutos sin tocar nada, la pantalla se bloquea sola
+  // Si pasan 3 minutos sin tocar nada, la pantalla se bloquea sola. Además
+  // de la portada local, se AVISA AL SERVIDOR (`lock`): así el botón del
+  // celular sabe que está en reposo y puede devolverla a la tómbola con un
+  // solo toque (antes solo funcionaba con el bloqueo manual).
+  const autoLockSent = useRef(false)
   useEffect(() => {
     const id = setInterval(() => {
       if (Date.now() - lastActivity.current >= IDLE_LOCK_MS) {
+        if (!autoLockSent.current) {
+          autoLockSent.current = true
+          lockScreen()
+        }
         setLocked(true)
+      } else {
+        autoLockSent.current = false
       }
     }, 1000)
     return () => clearInterval(id)
-  }, [])
+  }, [lockScreen])
 
-  // Despertar: cualquier toque o tecla cuando está bloqueada
+  // Despertar: cualquier toque o tecla cuando está bloqueada. También se
+  // avisa al servidor para que el celular no se quede mostrando
+  // "DESBLOQUEAR" sobre una pantalla que ya está despierta.
   useEffect(() => {
     if (!locked) return
     const wake = () => {
       setLocked(false)
       lastActivity.current = Date.now()
+      unlockScreen()
     }
     window.addEventListener('pointerdown', wake)
     window.addEventListener('keydown', wake)
@@ -204,7 +218,7 @@ export function ScreenView() {
       window.removeEventListener('pointerdown', wake)
       window.removeEventListener('keydown', wake)
     }
-  }, [locked])
+  }, [locked, unlockScreen])
 
   // La tómbola despierta la pantalla: sirena, conteo, giro o número nuevo
   useEffect(() => {

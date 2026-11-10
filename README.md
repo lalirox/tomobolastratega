@@ -34,8 +34,9 @@ ya no muestra ningún QR. Lo que garantiza que sigan sirviendo para siempre:
   un interruptor**: al tocarlo otra vez la devuelve a la tómbola (y el texto
   cambia a DESBLOQUEAR PANTALLA). El estado vive en el servidor (`locked`), así
   la pantalla y el celular siempre coinciden. También se bloquea sola tras 3
-  minutos sin tocar nada; cualquier toque, o cantar/alertar/nueva ronda, la
-  despierta.
+  minutos sin tocar nada, y **avisa al servidor** para que el botón del celular
+  pueda devolverla a la tómbola con un solo toque aunque el bloqueo no haya
+  sido manual; cualquier toque, o cantar/alertar/nueva ronda, la despierta.
 
 ## Desplegar en Vercel
 
@@ -146,8 +147,9 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
 - **Next.js App Router + TypeScript + Tailwind 4** — las 4 vistas y la API.
 - **`/api/tombola`** — estado del juego compartido:
   - `GET` → `{state, store}` (avanza el reloj: conteo 5→0, giro 1.9 s, sirena 3.5 s).
-  - `POST` `{action}` → `press` · `alert` · `toggleLock` · `lock` · `reset` · `setQueue`.
-    `toggleLock` es el interruptor de BLOQUEAR/DESBLOQUEAR PANTALLA.
+  - `POST` `{action}` → `press` · `alert` · `toggleLock` · `lock` · `unlock` · `reset` · `setQueue`.
+    `toggleLock` es el interruptor de BLOQUEAR/DESBLOQUEAR PANTALLA; la pantalla
+    manda `lock` al auto-bloquearse y `unlock` cuando la despiertan.
 - **`/api/health`** — comprueba el almacén compartido (ping real a Redis).
 - **`src/lib/tombola-engine.ts`** — motor puro basado en tiempo (sin timers),
   ideal para funciones serverless.
