@@ -122,6 +122,11 @@ export function useTombola(role: Role) {
   // STRATEGA CONSULTORES 2026)
   const lockScreen = useCallback(() => void send('lock'), [send])
 
+  // Interruptor del botón del anfitrión: bloquea si está despierta y
+  // despierta si está en reposo. El estado vive en el servidor (`locked`),
+  // así el botón de la pantalla y el del celular siempre coinciden.
+  const toggleLock = useCallback(() => void send('toggleLock'), [send])
+
   const reset = useCallback(() => void send('reset'), [send])
 
   // El jefe programa la lista de números que saldrán (modo dirigido)
@@ -130,5 +135,16 @@ export function useTombola(role: Role) {
     [send],
   )
 
-  return { state, connected, notice, store, press, sendAlert, reset, sendQueue, lockScreen }
+  return {
+    state,
+    connected,
+    notice,
+    store,
+    press,
+    sendAlert,
+    reset,
+    sendQueue,
+    lockScreen,
+    toggleLock,
+  }
 }

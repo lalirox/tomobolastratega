@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   const action = body?.action as ActionName
-  if (!['press', 'alert', 'lock', 'reset', 'setQueue'].includes(action)) {
+  if (!['press', 'alert', 'lock', 'toggleLock', 'reset', 'setQueue'].includes(action)) {
     return NextResponse.json({ error: 'bad-action' }, { status: 400, headers: NO_STORE })
   }
 

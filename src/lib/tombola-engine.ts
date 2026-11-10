@@ -15,7 +15,7 @@ export const SPIN_MS = 1900
 // Duración de la sirena visual/sonora cuando el anfitrión manda la alerta
 export const ALERT_MS = 3500
 
-export type ActionName = 'press' | 'alert' | 'lock' | 'reset' | 'setQueue'
+export type ActionName = 'press' | 'alert' | 'lock' | 'toggleLock' | 'reset' | 'setQueue'
 export type ActionResult = 'ok' | 'busy' | 'empty'
 
 export interface ActionPayload {
@@ -33,6 +33,7 @@ export function freshState(): GameState {
     total: TOTAL_NUMBERS,
     alertSeq: 0,
     lockSeq: 0,
+    locked: false,
     revealSeq: 0,
     fixedQueue: [],
     phaseStart: 0,
@@ -158,9 +159,17 @@ export function applyAction(
       if (state.remaining <= 0) {
         return { state, result: 'empty' }
       }
-      // Si hay una alerta sonando, se corta y el conteo arranca de inmediato
+      // Si hay una alerta sonando, se corta y el conteo arranca de inmediato.
+      // Cantar despierta la pantalla: si estaba en reposo, el público tiene
+      // que ver la tirada (y el cartel no debe tapar el número).
       return {
-        state: { ...state, phase: 'countdown', countdown: COUNTDOWN_FROM, phaseStart: now },
+        state: {
+          ...state,
+          phase: 'countdown',
+          countdown: COUNTDOWN_FROM,
+          phaseStart: now,
+          locked: false,
+        },
         result: 'ok',
       }
     }
@@ -169,20 +178,44 @@ export function applyAction(
       if (state.phase === 'countdown' || state.phase === 'spinning') {
         return { state, result: 'busy' }
       }
+      // La sirena también despierta la pantalla: si estaba en reposo, la
+      // portada taparía el aviso.
       return {
-        state: { ...state, phase: 'alert', alertSeq: state.alertSeq + 1, phaseStart: now },
+        state: {
+          ...state,
+          phase: 'alert',
+          alertSeq: state.alertSeq + 1,
+          phaseStart: now,
+          locked: false,
+        },
         result: 'ok',
       }
     }
 
     case 'lock': {
       // BLOQUEAR PANTALLA desde el celular: la pantalla grande pasa a reposo
-      return { state: { ...state, lockSeq: state.lockSeq + 1 }, result: 'ok' }
+      return {
+        state: { ...state, lockSeq: state.lockSeq + 1, locked: true },
+        result: 'ok',
+      }
+    }
+
+    case 'toggleLock': {
+      // El botón del anfitrión es un interruptor: si la pantalla está en
+      // reposo la despierta, y si está despierta la manda a reposo.
+      // `locked` vive en el estado compartido, así que pantalla y celular
+      // siempre muestran lo mismo.
+      return {
+        state: { ...state, lockSeq: state.lockSeq + 1, locked: !state.locked },
+        result: 'ok',
+      }
     }
 
     case 'reset': {
       // Nueva ronda: se borra historial y lista del jefe, pero los
-      // contadores (alertas, bloqueos, revelaciones) siguen creciendo
+      // contadores (alertas, bloqueos, revelaciones) siguen creciendo.
+      // La pantalla queda despierta: una ronda nueva se juega, no se mira
+      // en reposo.
       return {
         state: {
           ...state,
@@ -193,6 +226,7 @@ export function applyAction(
           remaining: TOTAL_NUMBERS,
           fixedQueue: [],
           phaseStart: 0,
+          locked: false,
         },
         result: 'ok',
       }

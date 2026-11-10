@@ -136,8 +136,40 @@ describe('motor del juego', () => {
   test('el bloqueo remoto no cambia la fase ni los números cantados', () => {
     const state = applyAction(freshState(), 'lock', {}, T).state
     expect(state.lockSeq).toBe(1)
+    expect(state.locked).toBe(true)
     expect(state.phase).toBe('idle')
     expect(state.drawn).toEqual([])
+  })
+
+  test('el botón del anfitrión es un interruptor: bloquea y desbloquea', () => {
+    let state = freshState()
+    expect(state.locked).toBe(false)
+
+    state = applyAction(state, 'toggleLock', {}, T).state
+    expect(state.locked).toBe(true)
+    expect(state.lockSeq).toBe(1)
+
+    state = applyAction(state, 'toggleLock', {}, T).state
+    expect(state.locked).toBe(false)
+    expect(state.lockSeq).toBe(2)
+
+    state = applyAction(state, 'toggleLock', {}, T).state
+    expect(state.locked).toBe(true)
+  })
+
+  test('cantar despierta la pantalla aunque estuviera bloqueada', () => {
+    const bloqueada = applyAction(freshState(), 'toggleLock', {}, T).state
+    expect(bloqueada.locked).toBe(true)
+    const cantando = applyAction(bloqueada, 'press', {}, T).state
+    expect(cantando.locked).toBe(false)
+    expect(cantando.phase).toBe('countdown')
+  })
+
+  test('la sirena también despierta la pantalla (el cartel no tapa el aviso)', () => {
+    const bloqueada = applyAction(freshState(), 'toggleLock', {}, T).state
+    const alerta = applyAction(bloqueada, 'alert', {}, T).state
+    expect(alerta.locked).toBe(false)
+    expect(alerta.phase).toBe('alert')
   })
 
   test('la nueva ronda limpia historial y lista del jefe', () => {

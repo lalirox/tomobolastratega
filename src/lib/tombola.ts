@@ -11,8 +11,14 @@ export interface GameState {
   total: number
   /** Contador de alertas enviadas: al cambiar, suena la sirena de nuevo */
   alertSeq: number
-  /** Contador de bloqueos remotos: al cambiar, la pantalla grande pasa a reposo */
+  /** Contador de bloqueos remotos (histórico: la UI usa `locked`) */
   lockSeq: number
+  /**
+   * Pantalla grande bloqueada por el anfitrión. El botón del celular es un
+   * interruptor: bloquea y vuelve a desbloquear. Vive en el servidor para
+   * que pantalla y celular siempre coincidan.
+   */
+  locked: boolean
   /** Contador de números cantados: al cambiar, la pantalla abre el overlay del ganador */
   revealSeq: number
   /** Lista programada por el jefe: próximos números que saldrán, en orden */
@@ -30,6 +36,7 @@ export const INITIAL_STATE: GameState = {
   total: 100,
   alertSeq: 0,
   lockSeq: 0,
+  locked: false,
   revealSeq: 0,
   fixedQueue: [],
   phaseStart: 0,

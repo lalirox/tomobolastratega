@@ -30,8 +30,12 @@ ya no muestra ningún QR. Lo que garantiza que sigan sirviendo para siempre:
 > desde el dominio definitivo una vez desplegado en Vercel.
 
 - **BLOQUEAR PANTALLA** (solo en el celular) → la pantalla grande pasa a reposo:
-  logo + LA GRAN NOCHE + POSADA STRATEGA CONSULTORES 2026. También se activa
-  sola tras 3 minutos sin tocar nada; cualquier toque la despierta.
+  logo + LA GRAN NOCHE + POSADA STRATEGA CONSULTORES 2026. **El mismo botón es
+  un interruptor**: al tocarlo otra vez la devuelve a la tómbola (y el texto
+  cambia a DESBLOQUEAR PANTALLA). El estado vive en el servidor (`locked`), así
+  la pantalla y el celular siempre coinciden. También se bloquea sola tras 3
+  minutos sin tocar nada; cualquier toque, o cantar/alertar/nueva ronda, la
+  despierta.
 
 ## Desplegar en Vercel
 
@@ -142,7 +146,8 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
 - **Next.js App Router + TypeScript + Tailwind 4** — las 4 vistas y la API.
 - **`/api/tombola`** — estado del juego compartido:
   - `GET` → `{state, store}` (avanza el reloj: conteo 5→0, giro 1.9 s, sirena 3.5 s).
-  - `POST` `{action}` → `press` · `alert` · `lock` · `reset` · `setQueue`.
+  - `POST` `{action}` → `press` · `alert` · `toggleLock` · `lock` · `reset` · `setQueue`.
+    `toggleLock` es el interruptor de BLOQUEAR/DESBLOQUEAR PANTALLA.
 - **`/api/health`** — comprueba el almacén compartido (ping real a Redis).
 - **`src/lib/tombola-engine.ts`** — motor puro basado en tiempo (sin timers),
   ideal para funciones serverless.

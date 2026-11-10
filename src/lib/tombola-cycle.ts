@@ -54,6 +54,8 @@ export function parseState(raw: string | null): GameState {
         ...parsed,
         alertSeq: typeof parsed.alertSeq === 'number' ? parsed.alertSeq : 0,
         lockSeq: typeof parsed.lockSeq === 'number' ? parsed.lockSeq : 0,
+        // Estado viejo sin `locked`: la pantalla arranca despierta.
+        locked: parsed.locked === true,
         revealSeq: typeof parsed.revealSeq === 'number' ? parsed.revealSeq : 0,
         phaseStart: typeof parsed.phaseStart === 'number' ? parsed.phaseStart : 0,
       }

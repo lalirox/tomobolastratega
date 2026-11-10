@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, Hand, ListOrdered, Moon, RotateCcw, Siren, Smartphone, Wifi, WifiOff } from 'lucide-react'
+import { Check, Hand, ListOrdered, Moon, RotateCcw, Siren, Smartphone, Sun, Wifi, WifiOff } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,13 +21,15 @@ import { StoreWarning } from '@/components/tombola/store-warning'
 import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
-  const { state, connected, notice, press, sendAlert, reset, lockScreen, store } = useTombola('controller')
+  const { state, connected, notice, press, sendAlert, reset, toggleLock, store } =
+    useTombola('controller')
   // null = aún no llega la primera sincronización del servicio
   const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef<number | null>(null)
-  // Confirmación breve al bloquear la pantalla grande desde el celular
-  const [lockSent, setLockSent] = useState(false)
+  // Confirmación breve al bloquear/desbloquear la pantalla grande
+  // (null = sin aviso, true = quedó bloqueada, false = quedó despierta)
+  const [lockSent, setLockSent] = useState<boolean | null>(null)
 
   // Desbloquear audio en el primer toque
   useEffect(() => {
@@ -125,9 +127,11 @@ export function ControllerView() {
     sendAlert()
   }
 
-  // BLOQUEAR PANTALLA: la pantalla grande pasa a reposo (solo el logo,
-  // LA GRAN NOCHE y POSADA STRATEGA CONSULTORES 2026). Se despierta
-  // tocándola o con el siguiente número/alerta.
+  // BLOQUEAR / DESBLOQUEAR PANTALLA: el mismo botón es un interruptor.
+  // Si la pantalla está despierta la manda a reposo (logo + LA GRAN NOCHE
+  // + POSADA STRATEGA CONSULTORES 2026); si está en reposo, la devuelve a
+  // la tómbola. `locked` vive en el servidor, así el botón siempre refleja
+  // el estado real y no se puede quedar "al revés".
   const handleLock = () => {
     playClick()
     try {
@@ -135,9 +139,10 @@ export function ControllerView() {
     } catch {
       // sin vibración
     }
-    lockScreen()
-    setLockSent(true)
-    setTimeout(() => setLockSent(false), 2500)
+    const quedaraBloqueada = !state.locked
+    toggleLock()
+    setLockSent(quedaraBloqueada)
+    setTimeout(() => setLockSent(null), 2500)
   }
 
   return (
@@ -317,22 +322,34 @@ export function ControllerView() {
         </p>
       </div>
 
-      {/* BLOQUEAR PANTALLA: apaga la vista de la tómbola en la pantalla grande */}
+      {/* BLOQUEAR / DESBLOQUEAR PANTALLA: el mismo botón es un interruptor */}
       <div className="mt-5 w-full max-w-sm">
         <button
           type="button"
           onClick={handleLock}
-          aria-label="Bloquear la pantalla grande: pasa al reposo con el logo y La Gran Noche"
+          aria-pressed={state.locked}
+          aria-label={
+            state.locked
+              ? 'Desbloquear la pantalla grande: vuelve a la tómbola'
+              : 'Bloquear la pantalla grande: pasa al reposo con el logo y La Gran Noche'
+          }
           className={`flex w-full items-center justify-center gap-3 rounded-md border-2 px-6 py-3.5 font-rye text-lg shadow-[0_6px_0_#0d0803,0_12px_22px_rgba(0,0,0,.5)] transition-all duration-100 active:translate-y-1 active:shadow-[0_3px_0_#0d0803,0_5px_10px_rgba(0,0,0,.45)] ${
-            lockSent
+            lockSent !== null
               ? 'border-[#4a6b2a] bg-gradient-to-b from-[#3d5522] to-[#243610] text-[#b8d98a]'
-              : 'border-[#4a3a24] bg-gradient-to-b from-[#2b1d0e] to-[#1a1208] text-[#e8c877] hover:brightness-125'
+              : state.locked
+                ? 'border-[#8a6a1c] bg-gradient-to-b from-[#4a3510] to-[#2b1d0e] text-[#f3d27a] hover:brightness-125'
+                : 'border-[#4a3a24] bg-gradient-to-b from-[#2b1d0e] to-[#1a1208] text-[#e8c877] hover:brightness-125'
           }`}
         >
-          {lockSent ? (
+          {lockSent !== null ? (
             <>
               <Check className="h-5 w-5 shrink-0" aria-hidden="true" />
-              ¡PANTALLA BLOQUEADA!
+              {lockSent ? '¡PANTALLA BLOQUEADA!' : '¡PANTALLA DESBLOQUEADA!'}
+            </>
+          ) : state.locked ? (
+            <>
+              <Sun className="h-5 w-5 shrink-0" aria-hidden="true" />
+              DESBLOQUEAR PANTALLA
             </>
           ) : (
             <>
@@ -342,8 +359,9 @@ export function ControllerView() {
           )}
         </button>
         <p className="mt-2 text-center font-elite text-[11px] leading-snug text-[#c9a97a]">
-          La pantalla grande pasa al reposo con el cartel de la Posada: LA GRAN NOCHE YELLOWSTONE
-          · POSADA STRATEGA CONSULTORES 2026. Se despierta tocándola o al cantar un número.
+          {state.locked
+            ? 'La pantalla grande está en reposo con el cartel de la Posada. Toca de nuevo para devolverla a la tómbola.'
+            : 'La pantalla grande pasa al reposo con el cartel de la Posada: LA GRAN NOCHE YELLOWSTONE · POSADA STRATEGA CONSULTORES 2026. Toca otra vez para regresarla a la tómbola.'}
         </p>
       </div>
 

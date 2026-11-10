@@ -48,7 +48,6 @@ export function ScreenView() {
   const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
   const prevAlertSeq = useRef<number | null>(null)
-  const prevLockSeq = useRef<number | null>(null)
   const prevRevealSeq = useRef<number | null>(null)
 
   // Audio: se activa tras el primer toque en la pantalla (política del navegador)
@@ -88,24 +87,15 @@ export function ScreenView() {
     }
   }, [state.alertSeq, connected])
 
-  // BLOQUEAR PANTALLA remoto: el anfitrión lo manda desde su celular
-  // (lockSeq cambia) y la pantalla grande pasa a reposo de inmediato.
-  // Igual que la sirena: el contador base se toma en la primera
-  // sincronización real para no bloquear una pantalla recién cargada.
+  // BLOQUEAR/DESBLOQUEAR remoto: el anfitrión lo manda desde su celular y
+  // el estado compartido (`locked`) manda. Así el mismo botón bloquea y
+  // vuelve a despertar la pantalla, y el celular siempre muestra lo que
+  // de verdad está pasando.
   useEffect(() => {
     if (!connected) return
-    if (prevLockSeq.current === null) {
-      prevLockSeq.current = state.lockSeq
-      return
-    }
-    if (state.lockSeq !== prevLockSeq.current) {
-      if (state.lockSeq > prevLockSeq.current) {
-        setLocked(true)
-        lastActivity.current = Date.now()
-      }
-      prevLockSeq.current = state.lockSeq
-    }
-  }, [state.lockSeq, connected])
+    setLocked(state.locked)
+    if (state.locked) lastActivity.current = Date.now()
+  }, [state.locked, connected])
 
   // Redoble al girar y fanfarria al revelar. La decisión de qué se
   // presenta la toma decidePresentation(): el número ganador se abre con
