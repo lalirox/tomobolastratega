@@ -83,6 +83,21 @@ export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverl
         aria-hidden="true"
       />
 
+      {/* Estallido de la tómbola al soltar la bola: destello + anillo de
+          choque detrás del número. Se reinicia con cada número (key).
+          El centrado es con inset-0 + m-auto para que la animación de
+          escala no pise el transform. */}
+      <div
+        key={`flash-${number}`}
+        aria-hidden="true"
+        className="animate-flash-burst pointer-events-none absolute inset-0 m-auto h-[70vmin] w-[70vmin] rounded-full bg-[radial-gradient(circle,rgba(255,250,235,.9)_0%,rgba(243,210,122,.45)_40%,transparent_70%)]"
+      />
+      <div
+        key={`ring-${number}`}
+        aria-hidden="true"
+        className="animate-ring-burst pointer-events-none absolute inset-0 m-auto h-[62vmin] w-[62vmin] rounded-full border-[10px] border-[#f3d27a] shadow-[0_0_70px_rgba(243,210,122,.75)]"
+      />
+
       <div className="relative z-10 flex flex-col items-center gap-1 text-center sm:gap-2">
         <StrategaLogo className="h-16 w-16 animate-winner-pop object-contain drop-shadow-[0_0_30px_rgba(232,200,119,.6)] sm:h-24 sm:w-24" />
         <p className="mt-1 font-elite text-[clamp(12px,2.2vw,26px)] font-bold uppercase tracking-[0.5em] text-[#d8b45a] drop-shadow-[0_0_18px_rgba(201,162,39,.5)]">

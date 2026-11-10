@@ -354,6 +354,102 @@
   animation: fade-in-kf 0.25s ease-out both;
 }
 
+/* ── Tambor a punto de soltar la bola ─────────────────────────────
+   Mientras gira, el tambor entero vibra (como la tómbola física cuando
+   ya va a caer la bola) y, al salir el número, pega un golpe con
+   destello y anillo dorado. */
+
+@keyframes drum-rumble-kf {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate3d(-2.5px, 1.5px, 0) rotate(-0.45deg);
+  }
+  40% {
+    transform: translate3d(2.5px, -1.5px, 0) rotate(0.5deg);
+  }
+  60% {
+    transform: translate3d(-2px, -1px, 0) rotate(-0.35deg);
+  }
+  80% {
+    transform: translate3d(2px, 1px, 0) rotate(0.35deg);
+  }
+}
+.animate-rumble {
+  animation: drum-rumble-kf 0.16s linear infinite;
+  will-change: transform;
+}
+
+/* Destello blanco-dorado que ilumina el tambor en el instante exacto */
+@keyframes flash-burst-kf {
+  0% {
+    opacity: 0;
+    transform: scale(0.65);
+  }
+  7% {
+    opacity: 0.95;
+  }
+  35% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+.animate-flash-burst {
+  animation: flash-burst-kf 0.55s ease-out both;
+}
+
+/* Anillo de choque que se expande hacia afuera */
+@keyframes ring-burst-kf {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+.animate-ring-burst {
+  animation: ring-burst-kf 0.7s cubic-bezier(0.15, 0.8, 0.3, 1) both;
+}
+
+/* Bolas que brincan dentro del tambor mientras gira */
+@keyframes ball-jitter-kf {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-8%) scale(1.07);
+  }
+  70% {
+    transform: translateY(4%) scale(0.97);
+  }
+}
+.animate-ball-jitter {
+  animation: ball-jitter-kf 0.42s ease-in-out infinite;
+}
+
+/* Accesibilidad: sin sacudidas ni destellos para quien lo pida */
+@media (prefers-reduced-motion: reduce) {
+  .animate-rumble,
+  .animate-ball-jitter {
+    animation: none !important;
+  }
+  .animate-flash-burst,
+  .animate-ring-burst {
+    display: none;
+  }
+}
+
 /* western theme v6 · portada única del evento (el póster de la Posada,
    usado por BrandingOverlay y LockOverlay; anima con .rays-spin ya
    definida arriba — ya no hay diseño alterno de bloqueo) */
