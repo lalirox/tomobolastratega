@@ -17,10 +17,11 @@ import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
 import { Studs } from '@/components/tombola/brand'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
+import { StoreWarning } from '@/components/tombola/store-warning'
 import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
-  const { state, connected, notice, press, sendAlert, reset, lockScreen } = useTombola('controller')
+  const { state, connected, notice, press, sendAlert, reset, lockScreen, store } = useTombola('controller')
   // null = aún no llega la primera sincronización del servicio
   const prevPhase = useRef<Phase | null>(null)
   const prevCountdown = useRef(state.countdown)
@@ -141,6 +142,10 @@ export function ControllerView() {
 
   return (
     <div className="wood-bg flex min-h-dvh flex-col items-center px-4 pb-8 pt-6 text-[#f3e6c3]">
+      {/* Aviso si el estado no se está compartiendo (este celular no
+          controla la pantalla grande) */}
+      <StoreWarning store={store} variant="inline" />
+
       {/* Aviso temporal */}
       {notice && (
         <div

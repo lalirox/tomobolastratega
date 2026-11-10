@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { INITIAL_STATE, type GameState, type Role } from '@/lib/tombola'
+import { INITIAL_STATE, type GameState, type Role, type StoreStatus } from '@/lib/tombola'
 
 /**
  * Sincroniza el estado del juego con la API /api/tombola.
@@ -15,6 +15,9 @@ export function useTombola(role: Role) {
   const [state, setState] = useState<GameState>(INITIAL_STATE)
   const [connected, setConnected] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  // Estado del almacén que reporta el servidor. Si el modo es 'memoria',
+  // la pantalla y el celular NO se sincronizan y hay que avisarlo.
+  const [store, setStore] = useState<StoreStatus | null>(null)
 
   // Ref siempre fresco para decidir el ritmo de polling sin re-crear el efecto
   const phaseRef = useRef<GameState['phase']>('idle')
@@ -32,9 +35,10 @@ export function useTombola(role: Role) {
       try {
         const res = await fetch('/api/tombola', { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
-        const data = (await res.json()) as { state: GameState }
+        const data = (await res.json()) as { state: GameState; store?: StoreStatus }
         if (stopRef.current) return
         setState(data.state)
+        if (data.store) setStore(data.store)
         setConnected(true)
       } catch {
         if (!stopRef.current) setConnected(false)
@@ -90,8 +94,13 @@ export function useTombola(role: Role) {
           cache: 'no-store',
         })
         if (!res.ok) throw new Error(String(res.status))
-        const data = (await res.json()) as { result: string; state: GameState }
+        const data = (await res.json()) as {
+          result: string
+          state: GameState
+          store?: StoreStatus
+        }
         setState(data.state)
+        if (data.store) setStore(data.store)
         setConnected(true)
         if (data.result === 'busy')
           setNotice('La bola está por caer… espera un momento')
@@ -121,5 +130,5 @@ export function useTombola(role: Role) {
     [send],
   )
 
-  return { state, connected, notice, press, sendAlert, reset, sendQueue, lockScreen }
+  return { state, connected, notice, store, press, sendAlert, reset, sendQueue, lockScreen }
 }

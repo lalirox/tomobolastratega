@@ -53,8 +53,41 @@ ya no muestra ningún QR. Lo que garantiza que sigan sirviendo para siempre:
    memoria y la pantalla y el celular podrían no sincronizarse. En local no
    hacen falta.
 
+   > **Ojo con el nombre.** La variable se llama `UPSTASH_REDIS_REST_URL`.
+   > Si copias la de **Upstash Vector** (`UPSTASH_VECTOR_REST_URL`) la web
+   > seguirá cargando pero **sin sincronizar**: Vector es otro producto, con
+   > otra API (`/query`, `/fetch`) y no habla los comandos de Redis que usa
+   > la tómbola (`/get`, `/eval`). Y si la URL falta por completo, la web
+   > cae en silencio a la memoria de cada instancia. Para evitar sorpresas,
+   > compruébalo en `/api/health` y mira la insignia roja de la pantalla.
+
 3. Vuelve a desplegar (*Deployments → Redeploy*) y listo: abre la URL de Vercel
    en la laptop (pantalla grande) y escanea el QR del logo desde tu celular.
+
+## Comprobar que todo funciona
+
+Abre `https://TU-DOMINIO/api/health` en el navegador:
+
+```json
+{
+  "ok": true,
+  "modo": "redis",
+  "host": "quiet-mouse-12345.upstash.io",
+  "problema": null,
+  "detalle": "Redis responde: escritura y lectura correctas.",
+  "estadoGuardado": true
+}
+```
+
+- `ok: true` → el estado se comparte: la pantalla y el celular se sincronizan.
+- `ok: false` → **no se sincronizan**. El campo `problema` dice qué variable
+  corregir (falta la URL, falta el token, o es la URL de Vector).
+- `estadoGuardado: false` → Redis responde pero todavía no se ha jugado
+  ninguna ronda (normal al empezar).
+
+Mientras el modo sea `memoria`, la pantalla grande y el celular muestran
+una insignia roja de **"SIN SINCRONIZACIÓN"**: el juego no funciona entre
+dispositivos y así se nota de inmediato en el proyector.
 
 ## Correr en local
 
@@ -108,8 +141,9 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
 
 - **Next.js App Router + TypeScript + Tailwind 4** — las 4 vistas y la API.
 - **`/api/tombola`** — estado del juego compartido:
-  - `GET` → estado actual (avanza el reloj: conteo 5→0, giro 1.9 s, sirena 3.5 s).
+  - `GET` → `{state, store}` (avanza el reloj: conteo 5→0, giro 1.9 s, sirena 3.5 s).
   - `POST` `{action}` → `press` · `alert` · `lock` · `reset` · `setQueue`.
+- **`/api/health`** — comprueba el almacén compartido (ping real a Redis).
 - **`src/lib/tombola-engine.ts`** — motor puro basado en tiempo (sin timers),
   ideal para funciones serverless.
 - **`src/lib/tombola-cycle.ts`** — ciclo del servidor (leer → avanzar →

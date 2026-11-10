@@ -5,6 +5,7 @@ import { Check, Eraser, KeyRound, ListOrdered, Moon, Wifi, WifiOff } from 'lucid
 import { useTombola } from '@/hooks/use-tombola'
 import { Studs } from '@/components/tombola/brand'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
+import { StoreWarning } from '@/components/tombola/store-warning'
 import { playClick, primeAudio } from '@/lib/sounds'
 
 // Misma contraseña privada del anfitrión que el panel QR de la pantalla
@@ -19,7 +20,7 @@ const SESSION_KEY = 'stratega-jefe-ok'
  * tambor vuelve a cantar al azar.
  */
 export function MaestroView() {
-  const { state, connected, sendQueue, lockScreen } = useTombola('controller')
+  const { state, connected, sendQueue, lockScreen, store } = useTombola('controller')
   const [unlocked, setUnlocked] = useState(false)
   const [pw, setPw] = useState('')
   const [error, setError] = useState(false)
@@ -148,6 +149,9 @@ export function MaestroView() {
 
   return (
     <div className="wood-bg flex min-h-dvh flex-col items-center px-4 pb-10 pt-6 text-[#f3e6c3]">
+      {/* Aviso si el estado no se está compartiendo */}
+      <StoreWarning store={store} variant="inline" />
+
       <header className="mb-4 text-center">
         <div className="flex items-center justify-center gap-3">
           <StrategaLogo className="h-11 w-11 object-contain sm:h-12 sm:w-12" />

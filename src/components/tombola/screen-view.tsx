@@ -19,6 +19,7 @@ import { decidePresentation } from '@/lib/tombola-present'
 import { Drum } from '@/components/tombola/drum'
 import { HistoryGrid } from '@/components/tombola/history-grid'
 import { AlertOverlay, BrandingOverlay, LockOverlay, WinnerOverlay } from '@/components/tombola/overlays'
+import { StoreWarning } from '@/components/tombola/store-warning'
 import { MountainRidge, StrategaLogo, Studs } from '@/components/tombola/brand'
 import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
 
@@ -26,7 +27,7 @@ import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick
 const IDLE_LOCK_MS = 3 * 60 * 1000
 
 export function ScreenView() {
-  const { state, connected, notice, reset } = useTombola('screen')
+  const { state, connected, notice, reset, store } = useTombola('screen')
   const [muted, setMutedState] = useState(true)
   const [flicker, setFlicker] = useState<number | null>(null)
   // Número cuyo overlay fullscreen se está mostrando (null = no mostrar)
@@ -240,6 +241,10 @@ export function ScreenView() {
 
   return (
     <div className="wood-bg flex min-h-dvh flex-col text-[#f3e6c3]">
+      {/* Aviso grande si el estado no se está compartiendo (pantalla y
+          celular no se sincronizarían) */}
+      <StoreWarning store={store} />
+
       {/* Aviso temporal (busy / empty) */}
       {notice && (
         <div

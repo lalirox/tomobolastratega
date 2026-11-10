@@ -36,3 +36,15 @@ export const INITIAL_STATE: GameState = {
 }
 
 export type Role = 'screen' | 'controller'
+
+/**
+ * Estado del almacén compartido que reporta el servidor. Si el modo es
+ * 'memoria', la pantalla grande y el celular NO se sincronizan (cada
+ * instancia de Vercel tiene su propia copia) y hay que avisarlo.
+ */
+export interface StoreStatus {
+  /** 'redis' = estado compartido (todo bien) · 'memoria' = sin sincronizar */
+  modo: 'redis' | 'memoria'
+  /** Qué está mal en la configuración (null si todo está bien) */
+  problema: string | null
+}

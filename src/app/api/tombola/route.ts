@@ -13,9 +13,9 @@
 // en Vercel — y en la memoria del proceso en local (sin configurar).
 // ─────────────────────────────────────────────────────────────
 import { NextRequest, NextResponse } from 'next/server'
-import { INITIAL_STATE } from '@/lib/tombola'
+import { INITIAL_STATE, type StoreStatus } from '@/lib/tombola'
 import { type ActionName } from '@/lib/tombola-engine'
-import { casWrite, readRaw } from '@/lib/tombola-store'
+import { casWrite, readRaw, storeInfo } from '@/lib/tombola-store'
 import { applyGameAction, withState } from '@/lib/tombola-cycle'
 
 export const dynamic = 'force-dynamic'
@@ -30,13 +30,23 @@ const store = {
   casWrite: (expected: string, next: string) => casWrite(expected, next),
 }
 
+/**
+ * Estado del almacén para el cliente: si el modo es 'memoria', la
+ * pantalla y el celular no comparten estado y hay que avisarlo (la
+ * insignia "SIN SINCRONIZACIÓN" de la pantalla grande).
+ */
+function storeStatus(): StoreStatus {
+  const info = storeInfo()
+  return { modo: info.modo, problema: info.problema }
+}
+
 export async function GET() {
   try {
     const { state } = await withState(store, null)
-    return NextResponse.json({ state }, { headers: NO_STORE })
+    return NextResponse.json({ state, store: storeStatus() }, { headers: NO_STORE })
   } catch {
     return NextResponse.json(
-      { state: INITIAL_STATE, error: 'store' },
+      { state: INITIAL_STATE, store: storeStatus(), error: 'store' },
       { status: 503, headers: NO_STORE },
     )
   }
@@ -59,7 +69,7 @@ export async function POST(req: NextRequest) {
     const { result, state } = await applyGameAction(store, action, {
       numbers: body?.numbers,
     })
-    return NextResponse.json({ result, state }, { headers: NO_STORE })
+    return NextResponse.json({ result, state, store: storeStatus() }, { headers: NO_STORE })
   } catch {
     return NextResponse.json({ error: 'store' }, { status: 503, headers: NO_STORE })
   }

@@ -22,6 +22,7 @@ import {
 } from '../src/lib/tombola-engine'
 import { applyGameAction, withState, type StateStore } from '../src/lib/tombola-cycle'
 import { decidePresentation } from '../src/lib/tombola-present'
+import { diagnoseStore } from '../src/lib/tombola-store'
 import type { GameState } from '../src/lib/tombola'
 
 const T = 1_700_000_000_000
@@ -262,6 +263,34 @@ describe('ciclo del servidor', () => {
     // el estado devuelto es el guardado, no uno calculado en local
     expect(JSON.parse(res.state ? JSON.stringify(res.state) : '{}').phase).toBe('idle')
     expect(res.state.revealSeq).toBe(0)
+  })
+})
+
+// ───────────────────────── diagnóstico ─────────────────────────
+describe('diagnóstico del almacén', () => {
+  test('con las dos variables bien puesta no hay problema', () => {
+    expect(diagnoseStore('https://quiet-mouse-12345.upstash.io', 'AXxx...=')).toBeNull()
+  })
+
+  test('sin URL avisa que la pantalla y el celular no se sincronizan', () => {
+    const p = diagnoseStore(undefined, 'AXxx...=')
+    expect(p).toContain('UPSTASH_REDIS_REST_URL')
+    expect(p).toContain('NO se sincronizan')
+  })
+
+  test('sin token avisa igual', () => {
+    const p = diagnoseStore('https://quiet-mouse-12345.upstash.io', undefined)
+    expect(p).toContain('UPSTASH_REDIS_REST_TOKEN')
+  })
+
+  test('detecta la URL de Upstash Vector (no habla la API de Redis)', () => {
+    const p = diagnoseStore('https://quiet-mouse-12345.upstash.io/vector', 'AXxx...=')
+    expect(p).toContain('Vector')
+    expect(p).not.toContain('NO se sincronizan')
+  })
+
+  test('una URL normal de Redis no se confunde con Vector', () => {
+    expect(diagnoseStore('https://quiet-mouse-12345.upstash.io', 'AXxx...=')).toBeNull()
   })
 })
 
