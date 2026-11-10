@@ -78,38 +78,78 @@ export function playFanfare() {
   beep(1046.5, 0.5, 'square', 0.05, notes.length * 0.13)
 }
 
-// Sirena de alerta del rancho: barrido sube-baja de 3 ciclos
+// ─────────────────────────────────────────────────────────────
+// Alerta estilo "alerta sísmica": en vez de un barrido continuo (que
+// suena a sirena de fábrica), alterna DOS tonos —una cuarta justa
+// arriba/abajo— con pulsos marcados, timbre duro pero filtrado y una
+// suboctava que le da cuerpo. Es el patrón "bip-bop-bip-bop" que la
+// gente reconoce como aviso de emergencia.
+//
+// La duración la fija ALERT_MS (3.5 s en el motor): el sonido ocupa
+// ~3.3 s para no quedar cortado ni invadir el final del overlay.
+// ─────────────────────────────────────────────────────────────
 export function playSiren() {
   if (!ctx || muted) return
   try {
-    const t0 = ctx.currentTime
-    const cycles = 3
-    const cycle = 0.85
-    const osc = ctx.createOscillator()
-    const osc2 = ctx.createOscillator()
-    const g = ctx.createGain()
-    osc.type = 'sawtooth'
-    osc2.type = 'square'
-    for (let i = 0; i < cycles; i++) {
-      const base = t0 + i * cycle
-      osc.frequency.setValueAtTime(480, base)
-      osc.frequency.linearRampToValueAtTime(940, base + cycle * 0.5)
-      osc.frequency.linearRampToValueAtTime(480, base + cycle)
-      osc2.frequency.setValueAtTime(240, base)
-      osc2.frequency.linearRampToValueAtTime(470, base + cycle * 0.5)
-      osc2.frequency.linearRampToValueAtTime(240, base + cycle)
+    const t0 = ctx.currentTime + 0.02
+    const DUR = 3.3
+    const STEP = 0.24 // duración de cada tono (~4 alternancias por segundo)
+    const HI = 1046.5 // Do6
+    const LO = 783.99 // Sol5 (cuarta justa abajo)
+
+    // Filtro: recorta los agudos más molestos sin quitarle filo
+    const filtro = ctx.createBiquadFilter()
+    filtro.type = 'lowpass'
+    filtro.frequency.value = 3200
+    filtro.Q.value = 0.7
+
+    // Ganancia maestra: aquí se dibuja el pulso de cada tono
+    const master = ctx.createGain()
+    master.gain.value = 0
+    filtro.connect(master)
+    master.connect(ctx.destination)
+
+    // Dos osciladores desafinados (más áspero) + suboctava (cuerpo)
+    const a = ctx.createOscillator()
+    a.type = 'square'
+    const b = ctx.createOscillator()
+    b.type = 'sawtooth'
+    const sub = ctx.createOscillator()
+    sub.type = 'triangle'
+    a.connect(filtro)
+    b.connect(filtro)
+    sub.connect(filtro)
+
+    const notas = Math.floor(DUR / STEP)
+
+    // Alternancia de tonos
+    for (let i = 0; i < notas; i++) {
+      const t = t0 + i * STEP
+      const f = i % 2 === 0 ? HI : LO
+      a.frequency.setValueAtTime(f, t)
+      b.frequency.setValueAtTime(f * 1.006, t)
+      sub.frequency.setValueAtTime(f / 2, t)
     }
-    g.gain.setValueAtTime(0.0001, t0)
-    g.gain.exponentialRampToValueAtTime(0.14, t0 + 0.06)
-    g.gain.setValueAtTime(0.14, t0 + cycles * cycle - 0.3)
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + cycles * cycle)
-    osc.connect(g)
-    osc2.connect(g)
-    g.connect(ctx.destination)
-    osc.start(t0)
-    osc2.start(t0)
-    osc.stop(t0 + cycles * cycle + 0.05)
-    osc2.stop(t0 + cycles * cycle + 0.05)
+
+    // Un pulso de amplitud por tono: ataque seco y caída corta, para que
+    // se oiga "golpeado" y no como un tono sostenido
+    const pico = 0.15
+    master.gain.setValueAtTime(0.0001, t0)
+    for (let i = 0; i < notas; i++) {
+      const t = t0 + i * STEP
+      master.gain.setValueAtTime(0.0001, t)
+      master.gain.exponentialRampToValueAtTime(pico, t + 0.012)
+      master.gain.exponentialRampToValueAtTime(0.045, t + STEP * 0.82)
+    }
+    master.gain.exponentialRampToValueAtTime(0.0001, t0 + notas * STEP)
+
+    const fin = t0 + notas * STEP + 0.05
+    a.start(t0)
+    b.start(t0)
+    sub.start(t0)
+    a.stop(fin)
+    b.stop(fin)
+    sub.stop(fin)
   } catch {
     // silencio si falla
   }
