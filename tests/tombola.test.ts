@@ -22,7 +22,7 @@ import {
 } from '../src/lib/tombola-engine'
 import { applyGameAction, withState, type StateStore } from '../src/lib/tombola-cycle'
 import { decidePresentation } from '../src/lib/tombola-present'
-import { diagnoseStore } from '../src/lib/tombola-store'
+import { diagnoseStore, evalBody } from '../src/lib/tombola-store'
 import type { GameState } from '../src/lib/tombola'
 
 const T = 1_700_000_000_000
@@ -291,6 +291,28 @@ describe('diagnóstico del almacén', () => {
 
   test('una URL normal de Redis no se confunde con Vector', () => {
     expect(diagnoseStore('https://quiet-mouse-12345.upstash.io', 'AXxx...=')).toBeNull()
+  })
+})
+
+// ───────────────────────── formato de Upstash ─────────────────────────
+describe('formato del cuerpo para Upstash', () => {
+  test('el comando va PRIMERO en el array (si no, Upstash responde 400)', () => {
+    const cuerpo = evalBody('return 1', ['llave'], ['a', 'b'])
+    // Upstash recibe el comando completo: ["EVAL", script, numkeys, key..., arg...]
+    expect(cuerpo[0]).toBe('EVAL')
+    expect(cuerpo[1]).toBe('return 1')
+    expect(cuerpo[2]).toBe('1')
+    expect(cuerpo[3]).toBe('llave')
+    expect(cuerpo[4]).toBe('a')
+    expect(cuerpo[5]).toBe('b')
+  })
+
+  test('cuenta bien las llaves cuando hay varias', () => {
+    const cuerpo = evalBody('return 2', ['k1', 'k2'], ['x'])
+    expect(cuerpo[2]).toBe('2')
+    expect(cuerpo[3]).toBe('k1')
+    expect(cuerpo[4]).toBe('k2')
+    expect(cuerpo[5]).toBe('x')
   })
 })
 

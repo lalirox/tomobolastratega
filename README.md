@@ -152,6 +152,11 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
   grande (qué overlay se abre y cuándo se cierra).
 - **`src/lib/tombola-store.ts`** — estado en Upstash Redis (REST, con
   escritura *compare-and-set*) o en memoria del proceso en local.
+  Ojo con el formato: la API REST de Upstash recibe el comando completo
+  como array JSON y **el primer elemento es el nombre del comando**
+  (`["EVAL", script, numkeys, key..., arg...]`). Con el orden equivocado
+  Upstash responde `400 ERR wrong number of arguments for 'eval' command`
+  y la tómbola se queda sin poder escribir nada.
 - **`src/hooks/use-tombola.ts`** — polling adaptativo: 450 ms en acción
   (conteo/giro/ganador/alerta), 1.2 s en reposo.
 - Contraseña del QR oculto del jefe: `Strategapool_2026`.

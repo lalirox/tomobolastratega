@@ -110,6 +110,29 @@ interface UpstashResult {
   error?: string
 }
 
+/**
+ * Cuerpo para ejecutar un script Lua en Upstash.
+ *
+ * OJO con el formato (esto ya rompió la producción una vez): la API REST
+ * de Upstash recibe el comando completo como un array JSON y el PRIMER
+ * elemento es el nombre del comando. Por eso es ["EVAL", script, ...] y
+ * no [script, ...]. Con el orden equivocado Upstash responde 400
+ * "ERR wrong number of arguments for 'eval' command" y la tómbola se
+ * queda sin poder escribir nada.
+ *
+ * Formato verificado contra Upstash real (2026-11):
+ *   POST {url}          body: ["EVAL", script, numkeys, key..., arg...]  → ok
+ *   POST {url}/pipeline body: [["EVAL", script, numkeys, key..., arg...]] → ok
+ *   POST {url}/eval     body: [script, numkeys, key..., arg...]  → 400 ✗
+ */
+export function evalBody(
+  script: string,
+  keys: string[],
+  args: string[] = [],
+): unknown[] {
+  return ['EVAL', script, String(keys.length), ...keys, ...args]
+}
+
 async function restGet(key: string): Promise<UpstashResult | null> {
   if (!REST_URL || !REST_TOKEN) return null
   const res = await fetch(`${REST_URL.replace(/\/$/, '')}/get/${key}`, {
@@ -120,15 +143,21 @@ async function restGet(key: string): Promise<UpstashResult | null> {
   return (await res.json()) as UpstashResult
 }
 
-async function restEval(args: unknown[]): Promise<UpstashResult | null> {
+/** Ejecuta un script Lua (formato verificado: ver evalBody) */
+async function restEval(body: unknown[]): Promise<UpstashResult | null> {
   if (!REST_URL || !REST_TOKEN) return null
-  const res = await fetch(`${REST_URL.replace(/\/$/, '')}/eval`, {
+  const res = await fetch(REST_URL.replace(/\/$/, ''), {
     method: 'POST',
     headers: { Authorization: `Bearer ${REST_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(args),
+    body: JSON.stringify(body),
     cache: 'no-store',
   })
-  if (!res.ok) throw new Error(`Upstash REST ${res.status}`)
+  if (!res.ok) {
+    const texto = await res.text().catch(() => '')
+    throw new Error(
+      `Upstash REST ${res.status}${texto ? `: ${texto.slice(0, 160)}` : ''}`,
+    )
+  }
   return (await res.json()) as UpstashResult
 }
 
@@ -145,7 +174,7 @@ export async function readRaw(): Promise<string | null> {
 /** Escribe con CAS: true si ganó la carrera, false si otro la ganó antes */
 export async function casWrite(expected: string, next: string): Promise<boolean> {
   if (usingRedis) {
-    const data = await restEval([CAS_SCRIPT, '1', KEY, expected, next])
+    const data = await restEval(evalBody(CAS_SCRIPT, [KEY], [expected, next]))
     return data?.result === 1
   }
   const g = globalThis as { __tombolaRaw?: string }
@@ -166,22 +195,12 @@ export async function ping(): Promise<{ ok: boolean; detalle: string }> {
     }
   }
   try {
-    const res = await fetch(`${REST_URL!.replace(/\/$/, '')}/eval`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${REST_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify([PING_SCRIPT, '1', `${KEY}:ping`]),
-      cache: 'no-store',
-    })
-    if (!res.ok) {
-      const texto = await res.text().catch(() => '')
-      return {
-        ok: false,
-        detalle: `Upstash respondió ${res.status}${texto ? `: ${texto.slice(0, 200)}` : ''}`,
-      }
-    }
-    const data = (await res.json()) as UpstashResult
+    const data = await restEval(evalBody(PING_SCRIPT, [`${KEY}:ping`]))
     if (data?.result === 'pong') {
       return { ok: true, detalle: 'Redis responde: escritura y lectura correctas.' }
+    }
+    if (data?.error) {
+      return { ok: false, detalle: `Upstash rechazó la operación: ${String(data.error).slice(0, 200)}` }
     }
     return {
       ok: false,
