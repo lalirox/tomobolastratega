@@ -2,7 +2,7 @@
 
 Tómbola web western (tema Yellowstone) para proyectar en pantalla grande y
 controlar desde el celular. 100 números, tambor girando, historial, marcador,
-alerta tipo alerta sísmica y protector de pantalla.
+sirena de alerta y protector de pantalla.
 
 ## Vistas
 
@@ -167,9 +167,7 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
 - **`src/hooks/use-tombola.ts`** — polling adaptativo: 450 ms en acción
   (conteo/giro/ganador/alerta), 1.2 s en reposo.
 - **`src/lib/sounds.ts`** — efectos con Web Audio API, sin archivos: tic,
-  redoble, fanfarria y la alerta. La alerta es un patrón de **dos tonos
-  alternados** (Do6 / Sol5, ~4 por segundo) con timbre duro filtrado y una
-  suboctava: el "bip-bop" de las alertas sísmicas, en vez de un barrido
-  continuo de sirena. Silencio persistido en `localStorage`.
+  redoble, fanfarria y la sirena de alerta (barrido sube-baja de tres
+  ciclos). Silencio persistido en `localStorage`.
 - Contraseña del QR oculto del jefe: `Strategapool_2026`.
 
