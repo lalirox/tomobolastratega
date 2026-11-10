@@ -21,7 +21,18 @@ import { HistoryGrid } from '@/components/tombola/history-grid'
 import { AlertOverlay, BrandingOverlay, LockOverlay, WinnerOverlay } from '@/components/tombola/overlays'
 import { StoreWarning } from '@/components/tombola/store-warning'
 import { MountainRidge, StrategaLogo, Studs } from '@/components/tombola/brand'
-import { isMuted, loadMutePreference, playFanfare, playRoll, playSiren, playTick, primeAudio, setMuted } from '@/lib/sounds'
+import {
+  isAudioReady,
+  isMuted,
+  loadMutePreference,
+  playClick,
+  playFanfare,
+  playRoll,
+  playSiren,
+  playTick,
+  primeAudio,
+  setMuted,
+} from '@/lib/sounds'
 
 // Tiempo de inactividad antes de bloquear la pantalla grande (3 minutos)
 const IDLE_LOCK_MS = 3 * 60 * 1000
@@ -51,13 +62,49 @@ export function ScreenView() {
   const prevAlertSeq = useRef<number | null>(null)
   const prevRevealSeq = useRef<number | null>(null)
 
-  // Audio: se activa tras el primer toque en la pantalla (política del navegador)
+  // Audio: el navegador no deja sonar nada hasta que haya un gesto del
+  // usuario. En la pantalla grande nadie toca nada, así que se intenta al
+  // montar y se desbloquea con CUALQUIER interacción (clic, tecla, toque).
+  // Mientras el audio siga bloqueado se muestra el botón "ACTIVAR SONIDO".
+  const [audioReady, setAudioReady] = useState(false)
   useEffect(() => {
     queueMicrotask(() => setMutedState(loadMutePreference()))
-    const unlock = () => primeAudio()
-    window.addEventListener('pointerdown', unlock, { once: true })
-    return () => window.removeEventListener('pointerdown', unlock)
+    const intentar = () => {
+      primeAudio()
+      // resume() es asíncrono: se revisa un instante después
+      window.setTimeout(() => setAudioReady(isAudioReady()), 120)
+    }
+    const eventos: (keyof WindowEventMap)[] = [
+      'pointerdown',
+      'click',
+      'keydown',
+      'touchstart',
+      'wheel',
+    ]
+    eventos.forEach((e) => window.addEventListener(e, intentar, { passive: true }))
+    // Revisa periódicamente (por si el navegador lo suspende o lo permite solo)
+    const id = window.setInterval(() => setAudioReady(isAudioReady()), 1500)
+    // Al volver a la pestaña también se reintenta
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') intentar()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    intentar()
+    return () => {
+      eventos.forEach((e) => window.removeEventListener(e, intentar))
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
+
+  // Botón para desbloquear el audio desde la pantalla grande (solo si hace falta)
+  const activarSonido = () => {
+    primeAudio()
+    setMuted(false)
+    setMutedState(false)
+    playClick()
+    window.setTimeout(() => setAudioReady(isAudioReady()), 120)
+  }
 
   // Sonidos de la cuenta atrás 5 → 0. Hasta que llega la primera
   // sincronización real del servidor, solo se toma el valor base.
@@ -248,6 +295,21 @@ export function ScreenView() {
       {/* Aviso grande si el estado no se está compartiendo (pantalla y
           celular no se sincronizarían) */}
       <StoreWarning store={store} />
+
+      {/* Botón para desbloquear el audio de la pantalla grande. El navegador
+          no deja sonar hasta que haya un gesto; en el proyector nadie toca
+          nada, así que se pide un toque una sola vez (desaparece al sonar). */}
+      {!audioReady && (
+        <button
+          type="button"
+          onClick={activarSonido}
+          className="fixed bottom-5 right-5 z-[95] inline-flex items-center gap-2 rounded-full border-2 border-[#c9a227] bg-[#2b1a0c]/95 px-5 py-3 font-elite text-sm font-bold tracking-wide text-[#f3d27a] shadow-[0_10px_24px_rgba(0,0,0,.6)] transition hover:bg-[#3b2314] active:scale-95"
+          aria-label="Activar el sonido de la pantalla grande"
+        >
+          <Volume2 className="h-5 w-5" aria-hidden="true" />
+          ACTIVAR SONIDO
+        </button>
+      )}
 
       {/* Aviso temporal (busy / empty) */}
       {notice && (

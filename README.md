@@ -94,6 +94,20 @@ Mientras el modo sea `memoria`, la pantalla grande y el celular muestran
 una insignia roja de **"SIN SINCRONIZACIÓN"**: el juego no funciona entre
 dispositivos y así se nota de inmediato en el proyector.
 
+## Sonido en la pantalla grande
+
+Los navegadores no dejan sonar nada hasta que haya un gesto del usuario. En
+el proyector nadie toca la pantalla, así que al cargar aparece un botón
+**ACTIVAR SONIDO** abajo a la derecha: un clic y el audio queda desbloqueado
+para toda la sesión (el botón desaparece). Cualquier clic o tecla en la
+página también lo desbloquea.
+
+Para que sea automático (sin tocar nada), en Chrome abre el candado de la
+barra de direcciones → *Configuración del sitio* → **Sonido: Permitir**.
+
+La sirena de alerta suena **solo en la pantalla grande**; el celular del
+anfitrión solo vibra, para no tener la sirena pegada al oído.
+
 ## Correr en local
 
 ```bash

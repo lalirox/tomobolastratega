@@ -27,17 +27,31 @@ export function isMuted(): boolean {
   return muted
 }
 
-// El navegador exige un gesto del usuario para reproducir audio
-export function primeAudio() {
-  if (ctx) return
+// El navegador exige un gesto del usuario para reproducir audio. En la
+// pantalla grande nadie toca nada, así que hay que crear el AudioContext
+// y reanudarlo en cuanto haya cualquier interacción (o al montar, por si
+// el sitio ya tiene permiso de sonido).
+// Devuelve true si el audio quedó realmente listo para sonar.
+export function primeAudio(): boolean {
   try {
-    const AC =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (AC) ctx = new AC()
+    if (!ctx) {
+      const AC =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!AC) return false
+      ctx = new AC()
+    }
+    if (ctx.state === 'suspended') void ctx.resume()
+    return ctx.state === 'running'
   } catch {
     ctx = null
+    return false
   }
+}
+
+/** ¿El audio ya está desbloqueado y puede sonar? */
+export function isAudioReady(): boolean {
+  return ctx?.state === 'running'
 }
 
 function beep(freq: number, duration = 0.14, type: OscillatorType = 'square', gain = 0.06, when = 0) {

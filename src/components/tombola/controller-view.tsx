@@ -18,7 +18,7 @@ import type { Phase } from '@/lib/tombola'
 import { Studs } from '@/components/tombola/brand'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { StoreWarning } from '@/components/tombola/store-warning'
-import { playClick, playFanfare, playRoll, playSiren, playTick, primeAudio } from '@/lib/sounds'
+import { playClick, playFanfare, playRoll, playTick, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
   const { state, connected, notice, press, sendAlert, reset, toggleLock, store } =
@@ -51,9 +51,11 @@ export function ControllerView() {
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown])
 
-  // Sirena + vibración cada vez que se manda una alerta (alertSeq cambia).
+  // Vibración cada vez que se manda una alerta (alertSeq cambia). La sirena
+  // suena SOLO en la pantalla grande (el proyector); aquí basta el aviso
+  // táctil para el anfitrión.
   // En la primera sincronización solo se toma el contador: al (re)cargar el
-  // control después de alertas anteriores NO vuelve a sonar la sirena.
+  // control después de alertas anteriores NO vuelve a vibrar.
   useEffect(() => {
     if (prevAlertSeq.current === null) {
       prevAlertSeq.current = state.alertSeq
@@ -61,7 +63,6 @@ export function ControllerView() {
     }
     if (state.alertSeq !== prevAlertSeq.current) {
       if (state.alertSeq > 0) {
-        playSiren()
         try {
           navigator.vibrate?.([250, 120, 250, 120, 250])
         } catch {
