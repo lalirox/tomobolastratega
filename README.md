@@ -21,7 +21,7 @@ ya no muestra ningún QR. Lo que garantiza que sigan sirviendo para siempre:
   No se renombran ni se eliminan en ninguna versión futura.
 - Si algún día necesitas volver a generar los PNG (por ejemplo si cambias de
   dominio en Vercel), siguen disponibles en:
-  `TU-DOMINIO/api/qr/control.png?download=1` y `TU-DOMINIO/api/qr/lista.png?download=1`.
+  `tombolastratega.vercel.app/api/qr/control.png?download=1` y `tombolastratega.vercel.app/api/qr/lista.png?download=1`.
   El QR se genera con el dominio por el que entres, apuntando siempre a esas
   mismas rutas.
 
@@ -66,7 +66,7 @@ ya no muestra ningún QR. Lo que garantiza que sigan sirviendo para siempre:
 
 ## Comprobar que todo funciona
 
-Abre `https://TU-DOMINIO/api/health` en el navegador:
+Abre `https://tombolastratega.vercel.app/api/health` en el navegador:
 
 ```json
 {
