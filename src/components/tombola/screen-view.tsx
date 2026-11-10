@@ -35,8 +35,9 @@ export function ScreenView() {
   // Presentación del número ya terminada (overlay cerrado o alerta mandada):
   // el cuerpo de la pantalla vuelve a verse como la vista original de reposo
   const [presented, setPresented] = useState(false)
-  // Pantalla de bloqueo (protector): logo + LA GRAN NOCHE + POSADA
-  // STRATEGA CONSULTORES 2026. Se activa con BLOQUEAR PANTALLA desde el
+  // Portada de bloqueo (protector): el póster de la Posada — LA GRAN
+  // NOCHE YELLOWSTONE · POSADA STRATEGA CONSULTORES 2026 (mismo diseño
+  // que la pantalla de marca). Se activa con BLOQUEAR PANTALLA desde el
   // celular del anfitrión o sola tras 3 minutos sin tocar nada; cualquier
   // toque/tecla o evento del juego la despierta.
   const [locked, setLocked] = useState(false)
@@ -270,8 +271,8 @@ export function ScreenView() {
       {/* Pantalla de marca: permanece hasta la próxima alerta o número */}
       {branding && state.phase === 'revealed' && <BrandingOverlay />}
 
-      {/* Pantalla de bloqueo: solo el logo + LA GRAN NOCHE. Cualquier
-          toque, tecla o evento de la tómbola la despierta. */}
+      {/* Portada de bloqueo: el póster de la Posada (única portada).
+          Cualquier toque, tecla o evento de la tómbola la despierta. */}
       {locked && <LockOverlay />}
 
       {/* Cabecera compacta: logo + letrero + controles */}

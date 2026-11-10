@@ -337,8 +337,8 @@ export function ControllerView() {
           )}
         </button>
         <p className="mt-2 text-center font-elite text-[11px] leading-snug text-[#c9a97a]">
-          La pantalla grande pasa al reposo: solo se ve el logo, LA GRAN NOCHE y POSADA STRATEGA
-          CONSULTORES 2026. Se despierta tocándola o al cantar un número.
+          La pantalla grande pasa al reposo con el cartel de la Posada: LA GRAN NOCHE YELLOWSTONE
+          · POSADA STRATEGA CONSULTORES 2026. Se despierta tocándola o al cantar un número.
         </p>
       </div>
 

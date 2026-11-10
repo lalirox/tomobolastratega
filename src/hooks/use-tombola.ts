@@ -104,7 +104,8 @@ export function useTombola(role: Role) {
   const sendAlert = useCallback(() => void send('alert'), [send])
 
   // BLOQUEAR PANTALLA desde el celular: la pantalla grande pasa a reposo
-  // (solo el logo + LA GRAN NOCHE + POSADA STRATEGA CONSULTORES 2026)
+  // con la portada del cartel (LA GRAN NOCHE YELLOWSTONE · POSADA
+  // STRATEGA CONSULTORES 2026)
   const lockScreen = useCallback(() => void send('lock'), [send])
 
   const reset = useCallback(() => void send('reset'), [send])

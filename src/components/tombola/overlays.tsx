@@ -7,8 +7,10 @@ import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 // Overlays de pantalla completa:
 //  · AlertOverlay     → sirena visual del rancho (botón del celular)
 //  · WinnerOverlay    → número ganador ocupando toda la pantalla (20 s)
-//  · BrandingOverlay  → POSADA STRATEGA CONSULTORES 2026 (resting screen)
-//  · LockOverlay      → reposo: solo el logo + LA GRAN NOCHE
+//  · BrandingOverlay  → portada del cartel (resting screen tras el ganador)
+//  · LockOverlay      → la MISMA portada del cartel (bloqueo/reposo)
+//
+// Hay una sola portada (PosterCover): el póster oficial de la Posada.
 // ─────────────────────────────────────────────────────────────
 
 /** Alerta a pantalla completa con parpadeo rojo/dorado del rancho (fase 'alert') */
@@ -109,9 +111,52 @@ export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverl
   )
 }
 
+/** Fondo común de la portada: rayos dorados girando + viñeta oscura */
+function PosterBackdrop() {
+  return (
+    <>
+      {/* Rayos dorados girando de fondo */}
+      <div className="rays-spin absolute left-1/2 top-1/2 h-[250vmax] w-[250vmax]" aria-hidden="true" />
+      {/* Viñeta oscura para dar profundidad */}
+      <div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,.8)_82%)]"
+        aria-hidden="true"
+      />
+    </>
+  )
+}
+
+/**
+ * Portada única del evento (el póster oficial de la Posada): rayos
+ * dorados girando de fondo, logo 3D de Stratega, letrero LA GRAN NOCHE
+ * YELLOWSTONE, título POSADA STRATEGA CONSULTORES 2026 y la marca de
+ * hierro Y. Se usa tanto como pantalla de marca tras el número ganador
+ * como pantalla de bloqueo/reposo.
+ */
+function PosterCover() {
+  return (
+    <div className="relative z-10 flex flex-col items-center gap-1 text-center sm:gap-2">
+      <StrategaLogo className="h-28 w-28 animate-winner-pop object-contain drop-shadow-[0_0_44px_rgba(232,200,119,.55)] sm:h-44 sm:w-44" />
+      <p className="mt-2 font-elite text-[clamp(12px,2vw,24px)] font-bold uppercase tracking-[0.5em] text-[#d8b45a] drop-shadow-[0_0_18px_rgba(201,162,39,.5)]">
+        ★ La gran noche yellowstone ★
+      </p>
+      <p className="animate-winner-pop font-rye text-[clamp(52px,11vw,170px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_0_60px_rgba(201,162,39,.5)]">
+        POSADA
+      </p>
+      <p className="animate-pop font-rye text-[clamp(24px,5.2vw,84px)] leading-tight text-[#e8c877] drop-shadow-[0_0_30px_rgba(201,162,39,.4)]">
+        STRATEGA CONSULTORES
+      </p>
+      <p className="animate-winner-pop font-rye text-[clamp(52px,11vw,170px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_0_60px_rgba(201,162,39,.5)]">
+        2026
+      </p>
+      <BrandY className="mt-3 h-10 w-10 opacity-90 sm:h-14 sm:w-14" />
+    </div>
+  )
+}
+
 /**
  * Pantalla de marca: tras los 20 s del número ganador, la pantalla grande
- * se convierte en el marco de la Posada. No se quita con toques: solo la
+ * se convierte en el póster de la Posada. No se quita con toques: solo la
  * sustituyen una alerta (sirena) o un nuevo número cantado.
  */
 export function BrandingOverlay() {
@@ -121,38 +166,15 @@ export function BrandingOverlay() {
       role="status"
       aria-label="Posada Stratega Consultores 2026"
     >
-      {/* Rayos dorados girando de fondo */}
-      <div className="rays-spin absolute left-1/2 top-1/2 h-[250vmax] w-[250vmax]" aria-hidden="true" />
-      {/* Viñeta oscura para dar profundidad */}
-      <div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,.8)_82%)]"
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 flex flex-col items-center gap-1 text-center sm:gap-2">
-        <StrategaLogo className="h-28 w-28 animate-winner-pop object-contain drop-shadow-[0_0_44px_rgba(232,200,119,.55)] sm:h-44 sm:w-44" />
-        <p className="mt-2 font-elite text-[clamp(12px,2vw,24px)] font-bold uppercase tracking-[0.5em] text-[#d8b45a] drop-shadow-[0_0_18px_rgba(201,162,39,.5)]">
-          ★ La gran noche del rancho ★
-        </p>
-        <p className="animate-winner-pop font-rye text-[clamp(52px,11vw,170px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_0_60px_rgba(201,162,39,.5)]">
-          POSADA
-        </p>
-        <p className="animate-pop font-rye text-[clamp(24px,5.2vw,84px)] leading-tight text-[#e8c877] drop-shadow-[0_0_30px_rgba(201,162,39,.4)]">
-          STRATEGA CONSULTORES
-        </p>
-        <p className="animate-winner-pop font-rye text-[clamp(52px,11vw,170px)] leading-[0.95] text-[#f3d27a] drop-shadow-[0_0_60px_rgba(201,162,39,.5)]">
-          2026
-        </p>
-        <BrandY className="mt-3 h-10 w-10 opacity-90 sm:h-14 sm:w-14" />
-      </div>
+      <PosterBackdrop />
+      <PosterCover />
     </div>
   )
 }
 
 /**
- * Protector de pantalla (reposo): SOLO el logo de Stratega, el letrero
- * LA GRAN NOCHE y POSADA STRATEGA CONSULTORES 2026 — sin ningún otro
- * adorno del rancho.
+ * Pantalla de bloqueo (reposo): la MISMA portada del póster de la Posada
+ * (único diseño de portada en todo el sistema).
  * Se activa con el botón BLOQUEAR PANTALLA del celular del anfitrión o
  * sola después de 3 minutos sin tocar nada. Cualquier toque o tecla en
  * la pantalla grande la despierta y regresa a la tómbola.
@@ -162,25 +184,10 @@ export function LockOverlay() {
     <div
       className="animate-fade-in fixed inset-0 z-[90] flex items-center justify-center overflow-hidden bg-[#070402]"
       role="status"
-      aria-label="Pantalla en reposo: La Gran Noche · Posada Stratega Consultores 2026"
+      aria-label="Pantalla en reposo: La Gran Noche Yellowstone · Posada Stratega Consultores 2026"
     >
-      {/* Resplandor dorado tenue que respira detrás del logo */}
-      <div
-        className="absolute left-1/2 top-1/2 h-[95vmin] w-[95vmin] -translate-x-1/2 -translate-y-1/2"
-        aria-hidden="true"
-      >
-        <div className="lock-halo h-full w-full rounded-full" />
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center gap-7 sm:gap-10">
-        <StrategaLogo className="lock-breathe h-44 w-44 object-contain drop-shadow-[0_0_50px_rgba(232,200,119,.45)] sm:h-72 sm:w-72" />
-        <p className="lock-glow font-rye text-[clamp(44px,9vw,140px)] leading-none tracking-[0.06em] text-[#f3d27a]">
-          LA GRAN NOCHE
-        </p>
-        <p className="font-elite text-[clamp(13px,2.2vw,30px)] font-bold uppercase tracking-[0.42em] text-[#e8c877] drop-shadow-[0_0_22px_rgba(201,162,39,.45)]">
-          Posada Stratega Consultores 2026
-        </p>
-      </div>
+      <PosterBackdrop />
+      <PosterCover />
     </div>
   )
 }
