@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
+import { decidePresentation } from '@/lib/tombola-present'
 import { Drum } from '@/components/tombola/drum'
 import { HistoryGrid } from '@/components/tombola/history-grid'
 import { AlertOverlay, BrandingOverlay, LockOverlay, WinnerOverlay } from '@/components/tombola/overlays'
@@ -105,10 +106,15 @@ export function ScreenView() {
     }
   }, [state.lockSeq, connected])
 
-  // Redoble al girar y fanfarria al revelar. El overlay del ganador se abre
-  // con el CONTADOR de revelaciones (revealSeq): así funciona aunque el
+  // Redoble al girar y fanfarria al revelar. La decisión de qué se
+  // presenta la toma decidePresentation(): el número ganador se abre con
+  // el CONTADOR de revelaciones (revealSeq), así funciona aunque el
   // cliente se pierda fases intermedias (pestaña ralentizada por el
   // navegador, reconexiones, saltos de countdown/spinning a revealed).
+  // Un número cantado SE PRESENTA SIEMPRE, aunque la fase ya haya
+  // avanzado: si el anfitrión pidió la siguiente tirada antes de que la
+  // pantalla lo notara, el número se ve igual (antes se perdía y al
+  // volver a la tómbola parecía que salía otro).
   // Si la página se recarga a mitad de la presentación, NO se reabre el
   // ganador (la primera sincronización solo toma el contador base).
   // Al cerrarse el ganador (20 s o toque) entra la pantalla de marca, que se
@@ -117,44 +123,39 @@ export function ScreenView() {
     // Espera a la PRIMERA SINCRONIZACIÓN REAL del servidor (connected):
     // el estado inicial del montaje no cuenta como sincronización
     if (!connected) return
-    // Primera sincronización con el servicio: si la pantalla se carga cuando
-    // el juego ya está en 'revealed', se toma como presentación terminada
-    // (vista original con el historial), nunca se reabre el overlay
-    if (prevPhase.current === null) {
-      prevPhase.current = state.phase
-      prevRevealSeq.current = state.revealSeq
-      if (state.phase === 'revealed') {
-        queueMicrotask(() => setPresented(true))
-      }
+
+    const p = decidePresentation(prevPhase.current, prevRevealSeq.current, state)
+    prevPhase.current = state.phase
+    prevRevealSeq.current = state.revealSeq
+
+    if (p.alreadyPresented) {
+      // La pantalla se cargó cuando el juego ya estaba en 'revealed':
+      // esa presentación se da por terminada (vista original con el
+      // historial), nunca se reabre el overlay.
+      queueMicrotask(() => setPresented(true))
       return
     }
 
-    // Número recién cantado: el contador de revelaciones cambió y el estado
-    // viene en 'revealed' con una bola asignada → overlay a pantalla completa
-    if (state.revealSeq !== prevRevealSeq.current) {
-      prevRevealSeq.current = state.revealSeq
-      if (state.phase === 'revealed' && state.lastNumber !== null) {
-        queueMicrotask(() => {
-          setWinnerNumber(state.lastNumber)
-          setPresented(false)
-        })
-        playFanfare()
-      }
+    if (p.winner !== null) {
+      const numero = p.winner
+      queueMicrotask(() => {
+        setWinnerNumber(numero)
+        setPresented(false)
+      })
+      playFanfare()
     }
 
-    if (state.phase !== prevPhase.current) {
-      if (state.phase !== 'revealed') {
-        queueMicrotask(() => {
-          setWinnerNumber(null)
-          setBranding(false)
-          // La alerta corta la presentación: al apagarse la sirena la
-          // pantalla grande muestra su vista original, no el último número
-          if (state.phase === 'alert') setPresented(true)
-        })
-      }
-      if (state.phase === 'spinning') playRoll()
-      prevPhase.current = state.phase
+    if (p.close) {
+      queueMicrotask(() => {
+        setWinnerNumber(null)
+        setBranding(false)
+        // La alerta corta la presentación: al apagarse la sirena la
+        // pantalla grande muestra su vista original, no el último número
+        if (state.phase === 'alert') setPresented(true)
+      })
     }
+
+    if (p.roll) playRoll()
   }, [state.phase, state.lastNumber, state.revealSeq, connected])
 
   // Números que parpadean mientras gira el tambor
@@ -252,21 +253,22 @@ export function ScreenView() {
       {/* Sirena de alerta del rancho (la manda el anfitrión desde el celular) */}
       {state.phase === 'alert' && <AlertOverlay />}
 
-      {/* Número ganador a pantalla completa (solo al cantarse un número nuevo) */}
-      {state.phase === 'revealed' &&
-        state.lastNumber !== null &&
-        winnerNumber === state.lastNumber && (
-          <WinnerOverlay
-            number={state.lastNumber}
-            round={state.drawn.length}
-            remaining={state.remaining}
-            onClose={() => {
-              setWinnerNumber(null)
-              setBranding(true)
-              setPresented(true)
-            }}
-          />
-        )}
+      {/* Número ganador a pantalla completa (se abre al cantarse un número
+          nuevo). No depende de la fase: si el anfitrión ya pidió la
+          siguiente tirada, el número se presenta igual y la cuenta atrás
+          sigue corriendo detrás del overlay. */}
+      {winnerNumber !== null && (
+        <WinnerOverlay
+          number={winnerNumber}
+          round={state.drawn.length}
+          remaining={state.remaining}
+          onClose={() => {
+            setWinnerNumber(null)
+            setBranding(true)
+            setPresented(true)
+          }}
+        />
+      )}
 
       {/* Pantalla de marca: permanece hasta la próxima alerta o número */}
       {branding && state.phase === 'revealed' && <BrandingOverlay />}

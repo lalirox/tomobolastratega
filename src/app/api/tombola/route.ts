@@ -13,67 +13,26 @@
 // en Vercel — y en la memoria del proceso en local (sin configurar).
 // ─────────────────────────────────────────────────────────────
 import { NextRequest, NextResponse } from 'next/server'
-import { INITIAL_STATE, type GameState } from '@/lib/tombola'
-import {
-  advance,
-  applyAction,
-  type ActionName,
-  type ActionResult,
-} from '@/lib/tombola-engine'
+import { INITIAL_STATE } from '@/lib/tombola'
+import { type ActionName } from '@/lib/tombola-engine'
 import { casWrite, readRaw } from '@/lib/tombola-store'
+import { applyGameAction, withState } from '@/lib/tombola-cycle'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 const NO_STORE = { 'Cache-Control': 'no-store, max-age=0' } as const
 
-function parseState(raw: string | null): GameState {
-  if (!raw) return INITIAL_STATE
-  try {
-    const parsed = JSON.parse(raw) as GameState
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      typeof parsed.phase === 'string' &&
-      Array.isArray(parsed.drawn) &&
-      Array.isArray(parsed.fixedQueue) &&
-      typeof parsed.alertSeq === 'number' &&
-      typeof parsed.lockSeq === 'number'
-    ) {
-      // Estado legado sin phaseStart (por si acaso): se normaliza
-      return { ...INITIAL_STATE, ...parsed, phaseStart: parsed.phaseStart ?? 0 }
-    }
-  } catch {
-    // JSON corrupto: se arranca de cero
-  }
-  return INITIAL_STATE
-}
-
-/**
- * Ciclo lectura → avanzar → mutar → escritura CAS. Si otra petición
- * ganó la carrera, reintenta con el valor fresco (hasta 6 veces).
- */
-async function withState(
-  mutate?: (state: GameState) => { state: GameState; result: ActionResult },
-): Promise<{ result: ActionResult; state: GameState }> {
-  let last: { result: ActionResult; state: GameState } | null = null
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const raw = await readRaw()
-    const current = parseState(raw)
-    const advanced = advance(current, Date.now())
-    const mutated = mutate ? mutate(advanced) : { state: advanced, result: 'ok' as const }
-    last = mutated
-    const ok = await casWrite(raw ?? '', JSON.stringify(mutated.state))
-    if (ok) return mutated
-  }
-  // No se pudo escribir tras los reintentos: se devuelve el mejor
-  // cálculo posible (la siguiente petición lo corregirá)
-  return last ?? { result: 'ok', state: advance(INITIAL_STATE, Date.now()) }
+// El almacén real: Upstash Redis (REST) en Vercel, memoria del proceso
+// en local. El compare-and-set evita que dos peticiones se pisen.
+const store = {
+  readRaw: () => readRaw(),
+  casWrite: (expected: string, next: string) => casWrite(expected, next),
 }
 
 export async function GET() {
   try {
-    const { state } = await withState()
+    const { state } = await withState(store, null)
     return NextResponse.json({ state }, { headers: NO_STORE })
   } catch {
     return NextResponse.json(
@@ -97,9 +56,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { result, state } = await withState((current) =>
-      applyAction(current, action, { numbers: body?.numbers }, Date.now()),
-    )
+    const { result, state } = await applyGameAction(store, action, {
+      numbers: body?.numbers,
+    })
     return NextResponse.json({ result, state }, { headers: NO_STORE })
   } catch {
     return NextResponse.json({ error: 'store' }, { status: 503, headers: NO_STORE })

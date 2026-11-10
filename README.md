@@ -70,16 +70,55 @@ bun run build
 bun run start
 ```
 
+Pruebas (motor, servidor y presentación de la pantalla):
+
+```bash
+bun test
+```
+
+## Reglas que no deben romperse
+
+Estas son las invariantes del juego en vivo. Cada una está cubierta por
+`tests/tombola.test.ts`.
+
+1. **Un número cantado se presenta SIEMPRE.** El contador `revealSeq`
+   avisa de que se materializó una bola, y la pantalla la muestra aunque
+   la fase ya haya avanzado (por ejemplo, si el anfitrión pidió la
+   siguiente tirada antes de que la pantalla lo notara). Antes, si la
+   fase ya no era `revealed`, el número se perdía: al volver a la tómbola
+   el público veía **otro** número distinto al que había salido.
+2. **El reloj gana contra la acción.** En el servidor, el reloj avanza
+   primero (es el que suelta la bola) y la acción se aplica sobre el
+   estado ya avanzado. Si al avanzar se cantó un número y la acción iba
+   a cambiar la fase (`press` o `alert`), se rechaza como `busy`: primero
+   se presenta el número.
+3. **El motor es puro.** La bola se elige con una semilla derivada del
+   propio estado, nunca con `Math.random()`. Así, dos peticiones que
+   leen lo mismo eligen la **misma** bola y la pantalla y el celular no
+   pueden ver números distintos.
+4. **Si el CAS falla, se devuelve el estado guardado**, nunca uno
+   calculado en local: si no, el cliente vería un número que no es el
+   que quedó en el almacén.
+5. **Los contadores solo crecen** (`alertSeq`, `lockSeq`, `revealSeq`).
+   "Nueva Ronda" limpia el historial y la lista del jefe, pero no los
+   contadores: si los reiniciara, una pantalla con la página abierta
+   volvería a mostrar el último número.
+
 ## Arquitectura
 
-- **Next.js App Router + TypeScript + Tailwind 4** — las 4 vistas y las API.
+- **Next.js App Router + TypeScript + Tailwind 4** — las 4 vistas y la API.
 - **`/api/tombola`** — estado del juego compartido:
   - `GET` → estado actual (avanza el reloj: conteo 5→0, giro 1.9 s, sirena 3.5 s).
   - `POST` `{action}` → `press` · `alert` · `lock` · `reset` · `setQueue`.
 - **`src/lib/tombola-engine.ts`** — motor puro basado en tiempo (sin timers),
   ideal para funciones serverless.
+- **`src/lib/tombola-cycle.ts`** — ciclo del servidor (leer → avanzar →
+  actuar → escribir con CAS) y normalización del estado guardado.
+- **`src/lib/tombola-present.ts`** — regla de presentación de la pantalla
+  grande (qué overlay se abre y cuándo se cierra).
 - **`src/lib/tombola-store.ts`** — estado en Upstash Redis (REST, con
   escritura *compare-and-set*) o en memoria del proceso en local.
 - **`src/hooks/use-tombola.ts`** — polling adaptativo: 450 ms en acción
-  (conteo/giro/alerta), 1.2 s en reposo.
+  (conteo/giro/ganador/alerta), 1.2 s en reposo.
 - Contraseña del QR oculto del jefe: `Strategapool_2026`.
+

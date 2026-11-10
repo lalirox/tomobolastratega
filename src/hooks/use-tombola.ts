@@ -41,9 +41,13 @@ export function useTombola(role: Role) {
       } finally {
         inFlight = false
         if (!stopRef.current) {
+          // Mientras hay algo en marcha en pantalla (cuenta, giro, sirena
+          // o el número cantado en su presentación) se consulta rápido para
+          // que la pantalla grande reaccione al instante.
           const live =
             phaseRef.current === 'countdown' ||
             phaseRef.current === 'spinning' ||
+            phaseRef.current === 'revealed' ||
             phaseRef.current === 'alert'
           timer = setTimeout(poll, live ? 450 : 1200)
         }
@@ -89,7 +93,8 @@ export function useTombola(role: Role) {
         const data = (await res.json()) as { result: string; state: GameState }
         setState(data.state)
         setConnected(true)
-        if (data.result === 'busy') setNotice('La tómbola ya está en marcha...')
+        if (data.result === 'busy')
+          setNotice('La bola está por caer… espera un momento')
         if (data.result === 'empty') setNotice('Ya se cantaron los 100 números')
       } catch {
         setConnected(false)

@@ -40,6 +40,34 @@ export function freshState(): GameState {
 }
 
 /**
+ * Elige la bola que sale del tambor de forma DETERMINISTA: la misma
+ * semilla produce siempre el mismo número.
+ *
+ * Antes se usaba Math.random() y el motor NO era puro: si la pantalla
+ * grande y el celular consultaban el estado en el mismo instante, cada
+ * petición calculaba un número distinto y el cliente podía ver un número
+ * que no era el que quedó guardado (la siguiente consulta mostraba otro).
+ * Con la semilla derivada del propio estado, dos peticiones que leen lo
+ * mismo eligen SIEMPRE la misma bola, y el CAS deja una sola versión
+ * buena en el almacén.
+ */
+function pickFromPool(pool: number[], seed: number): number {
+  if (pool.length === 0) return 0
+  // Mezcla FNV-1a con finalizador tipo murmur3: reparto uniforme y
+  // dependiente de todos los números que quedan en el tambor.
+  let h = seed >>> 0
+  for (let i = 0; i < pool.length; i++) {
+    h = (h ^ pool[i]) >>> 0
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b) >>> 0
+  h = (h ^ (h >>> 13)) >>> 0
+  h = Math.imul(h, 0xc2b2ae35) >>> 0
+  h = (h ^ (h >>> 16)) >>> 0
+  return pool[h % pool.length]
+}
+
+/**
  * Avanza el estado según el reloj (transiciones automáticas):
  *  · countdown 5→0 (6 s)  →  spinning (1.9 s)  →  revealed (bola cantada)
  *  · alert (3.5 s)        →  idle
@@ -74,7 +102,14 @@ export function advance(state: GameState, now: number): GameState {
       for (let n = 1; n <= TOTAL_NUMBERS; n++) {
         if (!state.drawn.includes(n)) pool.push(n)
       }
-      picked = pool[Math.floor(Math.random() * pool.length)]
+      // Sin bolas en el tambor no hay nada que cantar: la ronda se cierra
+      // sin materializar un número (ni rastro de un "undefined").
+      if (pool.length === 0) {
+        return { ...state, phase: 'idle', countdown: 0, phaseStart: 0 }
+      }
+      // Semilla derivada del propio estado (misma lectura → misma bola)
+      const seed = (state.phaseStart ^ Math.imul(state.drawn.length + 1, 0x9e3779b1)) >>> 0
+      picked = pickFromPool(pool, seed)
     }
     const drawn = [...state.drawn, picked]
     return {
