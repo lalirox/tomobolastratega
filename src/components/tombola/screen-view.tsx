@@ -28,7 +28,6 @@ import {
   playRoll,
   playSiren,
   playTick,
-  preloadSiren,
   primeAudio,
   setMuted,
 } from '@/lib/sounds'
@@ -70,7 +69,6 @@ export function ScreenView() {
     queueMicrotask(() => setMutedState(loadMutePreference()))
     const intentar = () => {
       primeAudio()
-      preloadSiren()
       // resume() es asíncrono: se revisa un instante después
       window.setTimeout(() => setAudioReady(isAudioReady()), 120)
     }
@@ -100,7 +98,6 @@ export function ScreenView() {
   // Botón para desbloquear el audio desde la pantalla grande (solo si hace falta)
   const activarSonido = () => {
     primeAudio()
-    preloadSiren()
     setMuted(false)
     setMutedState(false)
     playClick()
@@ -278,7 +275,6 @@ export function ScreenView() {
   const cambiarSonido = (encendido: boolean) => {
     primeAudio()
     if (encendido) {
-      preloadSiren()
       playClick()
     }
     setMuted(!encendido)

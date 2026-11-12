@@ -92,57 +92,10 @@ export function playFanfare() {
   beep(1046.5, 0.5, 'square', 0.05, notes.length * 0.13)
 }
 
-// Sirena de alerta: archivo real (mp3) precargado. Si no se pudo cargar
-// —sin red, 404— se cae al barrido sintetizado de siempre.
-const SIREN_URL = '/sonidos/alerta.mp3'
-let sirenBuffer: AudioBuffer | null = null
-let sirenLoading: Promise<void> | null = null
-
-/** Precarga la sirena en el AudioContext (llamar tras desbloquear el audio) */
-export function preloadSiren(): void {
-  if (!ctx || sirenBuffer || sirenLoading) return
-  sirenLoading = fetch(SIREN_URL)
-    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
-    .then((data) => ctx!.decodeAudioData(data))
-    .then((buf) => {
-      sirenBuffer = buf
-    })
-    .catch(() => {
-      // se queda el sintetizado
-    })
-    .finally(() => {
-      sirenLoading = null
-    })
-}
-
-function playSirenBuffer(): boolean {
-  if (!ctx || !sirenBuffer) return false
-  try {
-    const src = ctx.createBufferSource()
-    src.buffer = sirenBuffer
-    const g = ctx.createGain()
-    g.gain.value = 0.8
-    src.connect(g)
-    g.connect(ctx.destination)
-    src.start()
-    return true
-  } catch {
-    return false
-  }
-}
-
-// Sirena sintetizada (respaldo): barrido sube-baja de 3 ciclos
+// Sirena de alerta del rancho: barrido sube-baja de 3 ciclos.
+// Ganancia alta a propósito: tiene que cortar el ruido de la fiesta y
+// poner en alerta a todo el salón.
 export function playSiren() {
-  if (muted) return
-  if (!ctx) return
-  if (ctx.state === 'suspended') void ctx.resume()
-  if (playSirenBuffer()) return
-  // Aún no está cargada: se pide y suena el respaldo mientras tanto
-  preloadSiren()
-  playSynthSiren()
-}
-
-function playSynthSiren() {
   if (!ctx || muted) return
   try {
     const t0 = ctx.currentTime
@@ -162,9 +115,10 @@ function playSynthSiren() {
       osc2.frequency.linearRampToValueAtTime(470, base + cycle * 0.5)
       osc2.frequency.linearRampToValueAtTime(240, base + cycle)
     }
+    const pico = 0.24
     g.gain.setValueAtTime(0.0001, t0)
-    g.gain.exponentialRampToValueAtTime(0.14, t0 + 0.06)
-    g.gain.setValueAtTime(0.14, t0 + cycles * cycle - 0.3)
+    g.gain.exponentialRampToValueAtTime(pico, t0 + 0.06)
+    g.gain.setValueAtTime(pico, t0 + cycles * cycle - 0.3)
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + cycles * cycle)
     osc.connect(g)
     osc2.connect(g)
