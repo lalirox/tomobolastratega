@@ -27,8 +27,9 @@ import {
   playFanfare,
   playRoll,
   playSiren,
+  playJackpot,
   playTick,
-  preloadSiren,
+  preloadSounds,
   primeAudio,
   setMuted,
 } from '@/lib/sounds'
@@ -70,7 +71,7 @@ export function ScreenView() {
     queueMicrotask(() => setMutedState(loadMutePreference()))
     const intentar = () => {
       primeAudio()
-      preloadSiren()
+      preloadSounds()
       // resume() es asíncrono: se revisa un instante después
       window.setTimeout(() => setAudioReady(isAudioReady()), 120)
     }
@@ -100,7 +101,7 @@ export function ScreenView() {
   // Botón para desbloquear el audio desde la pantalla grande (solo si hace falta)
   const activarSonido = () => {
     primeAudio()
-    preloadSiren()
+    preloadSounds()
     setMuted(false)
     setMutedState(false)
     playClick()
@@ -119,6 +120,23 @@ export function ScreenView() {
     }
     prevCountdown.current = state.countdown
   }, [state.phase, state.countdown, connected])
+
+  // Jackpot al iniciar una tirada: el anfitrión pulsó CANTAR NÚMERO en el
+  // celular y la pantalla entra en 'countdown'. La primera sincronización
+  // solo toma la referencia, para no sonar al cargar la página a media
+  // cuenta atrás.
+  const prevJackpotPhase = useRef<Phase | null>(null)
+  useEffect(() => {
+    if (!connected) return
+    if (prevJackpotPhase.current === null) {
+      prevJackpotPhase.current = state.phase
+      return
+    }
+    if (state.phase === 'countdown' && prevJackpotPhase.current !== 'countdown') {
+      playJackpot()
+    }
+    prevJackpotPhase.current = state.phase
+  }, [state.phase, connected])
 
   // Sirena cada vez que el anfitrión manda una alerta (alertSeq cambia).
   // La referencia base se toma en la PRIMERA SINCRONIZACIÓN REAL (connected),
@@ -278,7 +296,7 @@ export function ScreenView() {
   const cambiarSonido = (encendido: boolean) => {
     primeAudio()
     if (encendido) {
-      preloadSiren()
+      preloadSounds()
       playClick()
     }
     setMuted(!encendido)

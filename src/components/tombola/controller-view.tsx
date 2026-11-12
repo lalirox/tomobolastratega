@@ -16,7 +16,7 @@ import type { Phase } from '@/lib/tombola'
 import { Studs } from '@/components/tombola/brand'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
 import { StoreWarning } from '@/components/tombola/store-warning'
-import { playClick, playFanfare, playRoll, playTick, primeAudio } from '@/lib/sounds'
+import { playClick, playFanfare, playJackpot, playRoll, playTick, preloadSounds, primeAudio } from '@/lib/sounds'
 
 export function ControllerView() {
   const { state, connected, notice, press, sendAlert, reset, toggleLock, store } =
@@ -31,7 +31,10 @@ export function ControllerView() {
 
   // Desbloquear audio en el primer toque
   useEffect(() => {
-    const unlock = () => primeAudio()
+    const unlock = () => {
+      primeAudio()
+      preloadSounds()
+    }
     window.addEventListener('pointerdown', unlock, { once: true })
     return () => window.removeEventListener('pointerdown', unlock)
   }, [])
@@ -79,6 +82,8 @@ export function ControllerView() {
       return
     }
     if (state.phase !== prevPhase.current) {
+      // Jackpot al arrancar la tirada (lo que provoca CANTAR NÚMERO)
+      if (state.phase === 'countdown') playJackpot()
       if (state.phase === 'spinning') {
         playRoll()
         try {
