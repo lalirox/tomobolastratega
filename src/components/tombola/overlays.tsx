@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { BrandY, StrategaLogo } from '@/components/tombola/brand'
+import { Confetti } from '@/components/tombola/confetti'
 
 // ─────────────────────────────────────────────────────────────
 // Overlays de pantalla completa:
@@ -97,6 +98,9 @@ export function WinnerOverlay({ number, round, remaining, onClose }: WinnerOverl
         aria-hidden="true"
         className="animate-ring-burst pointer-events-none absolute inset-0 m-auto h-[62vmin] w-[62vmin] rounded-full border-[10px] border-[#f3d27a] shadow-[0_0_70px_rgba(243,210,122,.75)]"
       />
+
+      {/* Confeti del anuncio (delante del número, sin taparlo del todo) */}
+      <Confetti seed={number} />
 
       <div className="relative z-10 flex flex-col items-center gap-1 text-center sm:gap-2">
         <StrategaLogo className="h-16 w-16 animate-winner-pop object-contain drop-shadow-[0_0_30px_rgba(232,200,119,.6)] sm:h-24 sm:w-24" />
