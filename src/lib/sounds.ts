@@ -92,10 +92,56 @@ export function playFanfare() {
   beep(1046.5, 0.5, 'square', 0.05, notes.length * 0.13)
 }
 
-// Sirena de alerta del rancho: barrido sube-baja de 3 ciclos.
-// Ganancia alta a propósito: tiene que cortar el ruido de la fiesta y
-// poner en alerta a todo el salón.
+// Sirena de alerta: archivo real (public/sonidos/alerta.mp3) precargado.
+// Si no se pudo cargar —sin red, 404— se cae al barrido sintetizado.
+const SIREN_URL = '/sonidos/alerta.mp3'
+let sirenBuffer: AudioBuffer | null = null
+let sirenLoading: Promise<void> | null = null
+
+/** Precarga la sirena en el AudioContext (llamar tras desbloquear el audio) */
+export function preloadSiren(): void {
+  if (!ctx || sirenBuffer || sirenLoading) return
+  sirenLoading = fetch(SIREN_URL)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    .then((data) => ctx!.decodeAudioData(data))
+    .then((buf) => {
+      sirenBuffer = buf
+    })
+    .catch(() => {
+      // se queda el sintetizado
+    })
+    .finally(() => {
+      sirenLoading = null
+    })
+}
+
 export function playSiren() {
+  if (!ctx || muted) return
+  if (ctx.state === 'suspended') void ctx.resume()
+
+  // Archivo real a volumen pleno (ya viene a -1 dBFS)
+  if (sirenBuffer) {
+    try {
+      const src = ctx.createBufferSource()
+      src.buffer = sirenBuffer
+      const g = ctx.createGain()
+      g.gain.value = 1
+      src.connect(g)
+      g.connect(ctx.destination)
+      src.start()
+      return
+    } catch {
+      // cae al sintetizado
+    }
+  }
+
+  // Aún no está cargada: se pide para la próxima y suena el respaldo
+  preloadSiren()
+  playSynthSiren()
+}
+
+// Respaldo sintetizado: barrido sube-baja de 3 ciclos
+function playSynthSiren() {
   if (!ctx || muted) return
   try {
     const t0 = ctx.currentTime

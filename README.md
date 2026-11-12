@@ -181,8 +181,9 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
 - **`src/hooks/use-tombola.ts`** — polling adaptativo: 450 ms en acción
   (conteo/giro/ganador/alerta), 1.2 s en reposo.
 - **`src/lib/sounds.ts`** — efectos con Web Audio API, sin archivos: tic,
-  redoble, fanfarria y la sirena de alerta: barrido sube-baja de tres
-  ciclos con ganancia alta, para que corte el ruido de la fiesta.
+  redoble, fanfarria y la sirena de alerta. La sirena es
+  `public/sonidos/alerta.mp3` (2,7 s, precargada en el `AudioContext`);
+  si el archivo no carga, cae al barrido sintetizado de respaldo.
   Silencio persistido en `localStorage`.
 - **`@ui-sdk/react` (Vercel Labs UI SDK)** — solo *comportamientos*
   (foco, teclado, ARIA), sin estilos: el diálogo de "Nueva Ronda" y el
