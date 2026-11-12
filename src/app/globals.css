@@ -172,6 +172,35 @@
   border-radius: 9999px;
 }
 
+/* Aro de madera del tambor (da cuerpo físico a la tómbola) */
+.drum-wood {
+  background-image:
+    radial-gradient(circle at 30% 22%, rgba(255, 226, 170, 0.26), transparent 42%),
+    linear-gradient(145deg, #8a5a2b 0%, #6b4423 38%, #40280f 72%, #2a1a0c 100%);
+}
+.drum-wood-lit {
+  background-image:
+    radial-gradient(circle at 30% 22%, rgba(255, 240, 200, 0.42), transparent 45%),
+    linear-gradient(145deg, #a06a33 0%, #7a4e24 40%, #4a2e12 74%, #2f1d0d 100%);
+}
+
+/* Halo de escenario detrás del tambor */
+.drum-stage {
+  background-image: radial-gradient(
+    circle at 50% 44%,
+    rgba(201, 162, 39, 0.18),
+    rgba(201, 162, 39, 0.06) 42%,
+    transparent 70%
+  );
+}
+
+/* Vetas de la madera de las patas */
+.wood-grain {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 5px);
+}
+
 /* Animaciones */
 @keyframes pop-in {
   0% {

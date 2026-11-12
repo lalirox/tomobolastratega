@@ -183,5 +183,12 @@ Estas son las invariantes del juego en vivo. Cada una está cubierta por
 - **`src/lib/sounds.ts`** — efectos con Web Audio API, sin archivos: tic,
   redoble, fanfarria y la sirena de alerta (barrido sube-baja de tres
   ciclos). Silencio persistido en `localStorage`.
+- **Alerta real** — la sirena que suena es `public/sonidos/alerta.mp3`
+  (3,6 s, precargada en el `AudioContext`). Si el archivo no carga (sin
+  red, 404) se cae automáticamente al barrido sintetizado de respaldo.
+- **`@ui-sdk/react` (Vercel Labs UI SDK)** — solo *comportamientos*
+  (foco, teclado, ARIA), sin estilos: el diálogo de "Nueva Ronda" y el
+  interruptor de sonido. Los estilos siguen siendo nuestros. Documentación
+  local: `node_modules/@ui-sdk/react/docs/llms.txt`. La versión es beta.
 - Contraseña del QR oculto del jefe: `Strategapool_2026`.
 

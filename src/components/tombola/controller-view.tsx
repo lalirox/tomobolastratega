@@ -4,15 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, Hand, ListOrdered, Moon, RotateCcw, Siren, Smartphone, Sun, Wifi, WifiOff } from 'lucide-react'
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
+  AlertDialogBackdrop,
+  AlertDialogClose,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@ui-sdk/react/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
 import { Studs } from '@/components/tombola/brand'
@@ -396,33 +394,28 @@ export function ControllerView() {
       {/* Reiniciar ronda */}
       <div className="mt-6">
         <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md border-2 border-[#5a3a1c] bg-[#241608] px-4 py-2 font-elite text-sm text-[#f3e6c3] shadow transition hover:bg-[#33200f] active:scale-95"
-            >
-              <RotateCcw className="h-4 w-4" aria-hidden="true" /> Nueva Ronda
-            </button>
+          <AlertDialogTrigger className="inline-flex items-center gap-2 rounded-md border-2 border-[#5a3a1c] bg-[#241608] px-4 py-2 font-elite text-sm text-[#f3e6c3] shadow transition hover:bg-[#33200f] active:scale-95">
+            <RotateCcw className="h-4 w-4" aria-hidden="true" /> Nueva Ronda
           </AlertDialogTrigger>
-          <AlertDialogContent className="border-2 border-[#6b4423] bg-[#f3e6c3] text-[#2b1a0c]">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="font-rye text-xl">¿Barajar de nuevo?</AlertDialogTitle>
-              <AlertDialogDescription className="font-elite text-[#5a3a1c]">
-                Se borrará el historial y los 100 números volverán al tambor. Esta acción no se puede
-                deshacer.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="border-[#6b4423] bg-transparent font-elite text-[#3b2314] hover:bg-[#e0c68f]">
+          <AlertDialogBackdrop className="fixed inset-0 z-[80] bg-black/75" />
+          <AlertDialogContent className="parchment fixed left-1/2 top-1/2 z-[81] w-[min(92vw,480px)] -translate-x-1/2 -translate-y-1/2 rounded-md border-2 border-[#6b4423] p-5 text-[#2b1a0c] shadow-[0_24px_60px_rgba(0,0,0,.6)]">
+            <AlertDialogTitle className="font-rye text-xl">¿Barajar de nuevo?</AlertDialogTitle>
+            <AlertDialogDescription className="mt-2 font-elite text-[#5a3a1c]">
+              Se borrará el historial y los 100 números volverán al tambor. Esta acción no se puede
+              deshacer.
+            </AlertDialogDescription>
+            <div className="mt-5 flex justify-end gap-2">
+              <AlertDialogClose className="rounded-md border-2 border-[#6b4423] bg-transparent px-4 py-2 font-elite text-sm text-[#3b2314] transition hover:bg-[#e0c68f]">
                 Cancelar
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={reset}
-                className="bg-[#8b1a1a] font-elite text-[#f3e6c3] hover:bg-[#a3271c]"
+              </AlertDialogClose>
+              <AlertDialogClose
+                value="confirm"
+                action={reset}
+                className="rounded-md bg-[#8b1a1a] px-4 py-2 font-elite text-sm font-bold text-[#f3e6c3] transition hover:bg-[#a3271c]"
               >
                 Sí, nueva ronda
-              </AlertDialogAction>
-            </AlertDialogFooter>
+              </AlertDialogClose>
+            </div>
           </AlertDialogContent>
         </AlertDialog>
       </div>

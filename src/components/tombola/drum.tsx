@@ -38,31 +38,41 @@ export function Drum({ phase, countdown, flicker, lastNumber = null }: DrumProps
         spinning ? 'animate-rumble' : ''
       }`}
     >
-      {/* Manivela decorativa */}
-      <div className="absolute -right-6 top-1/2 z-40 -translate-y-1/2 sm:-right-8">
+      {/* Halo de escenario detrás del tambor */}
+      <div className="drum-stage pointer-events-none absolute -inset-10 rounded-full" aria-hidden="true" />
+
+      {/* Manivela decorativa: brazo metálico con mango de madera */}
+      <div className="absolute -right-7 top-1/2 z-40 -translate-y-1/2 sm:-right-9">
         <div
-          className={`h-2.5 w-10 rounded-full bg-gradient-to-b from-[#d9b45a] to-[#8a6420] shadow-md ${
+          className={`h-2 w-11 rounded-full bg-gradient-to-b from-[#d7dade] via-[#8a8f96] to-[#464b51] shadow-md ${
             spinning ? 'origin-left animate-crank' : ''
           }`}
         >
-          <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#e8c877] to-[#9c7428] shadow" />
+          <div className="absolute -right-3 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full border border-black/40 bg-gradient-to-br from-[#e8c877] via-[#c9a227] to-[#7a5a18] shadow-[inset_-1px_-2px_3px_rgba(0,0,0,.35),0_3px_6px_rgba(0,0,0,.5)]" />
         </div>
       </div>
 
-      {/* Tambor (al revelarse crece y brilla en dorado) */}
+      {/* Tambor: aro de madera + cristal (al revelarse crece y brilla) */}
       <div
-        className={`relative aspect-square overflow-hidden rounded-full border-[12px] transition-all duration-500 sm:border-[14px] ${
+        className={`relative rounded-full p-[12px] transition-all duration-500 sm:p-[15px] ${
           revealed
-            ? 'scale-[1.04] border-[#c9a227] shadow-[0_0_90px_rgba(201,162,39,.45),0_18px_40px_rgba(0,0,0,.6),inset_0_0_30px_rgba(0,0,0,.8)]'
-            : 'border-[#453319] shadow-[0_18px_40px_rgba(0,0,0,.6),inset_0_0_30px_rgba(0,0,0,.8)]'
+            ? 'drum-wood-lit scale-[1.04] shadow-[0_0_90px_rgba(201,162,39,.5),0_26px_60px_rgba(0,0,0,.65)]'
+            : 'drum-wood shadow-[0_26px_60px_rgba(0,0,0,.6),inset_0_2px_0_rgba(255,225,170,.18)]'
         }`}
-        style={{
-          background:
-            'radial-gradient(circle at 32% 28%, #43301c 0%, #20150a 58%, #120b04 100%)',
-        }}
-        role="img"
-        aria-label="Tambor de la tómbola girando con bolas de números"
       >
+        <div
+          className={`relative aspect-square overflow-hidden rounded-full ${
+            revealed
+              ? 'shadow-[inset_0_0_40px_rgba(0,0,0,.85),0_0_0_2px_rgba(243,210,122,.75)]'
+              : 'shadow-[inset_0_0_40px_rgba(0,0,0,.85),inset_0_0_0_2px_rgba(0,0,0,.45)]'
+          }`}
+          style={{
+            background:
+              'radial-gradient(circle at 32% 28%, #43301c 0%, #20150a 58%, #120b04 100%)',
+          }}
+          role="img"
+          aria-label="Tambor de la tómbola girando con bolas de números"
+        >
           {/* Bolas que giran */}
           <div
             className={`absolute inset-0 ${spinning ? 'animate-spin-fast' : counting ? 'animate-spin-slow' : ''}`}
@@ -78,12 +88,18 @@ export function Drum({ phase, countdown, flicker, lastNumber = null }: DrumProps
                   left: `${b.l}%`,
                   width: '13%',
                   height: '13%',
-                  background: 'radial-gradient(circle at 35% 30%, #fffef8, #ddd2b4 75%)',
+                  background:
+                    'radial-gradient(circle at 35% 28%, #fffef8 0%, #f2ead2 45%, #d5c8a6 100%)',
                   borderColor: '#9a8a62',
                   fontSize: 'clamp(9px, 2.2vw, 15px)',
                   animationDelay: spinning ? `${(i % 7) * 55}ms` : undefined,
                 }}
               >
+                {/* Reflejo del cristal sobre la bola */}
+                <span
+                  className="pointer-events-none absolute left-[20%] top-[16%] h-[26%] w-[26%] rounded-full bg-white/80 blur-[0.5px]"
+                  aria-hidden="true"
+                />
                 {b.n}
               </div>
             ))}
@@ -92,9 +108,10 @@ export function Drum({ phase, countdown, flicker, lastNumber = null }: DrumProps
           {/* Rejilla metálica */}
           <div className="drum-mesh absolute inset-0 rounded-full" />
 
-          {/* Brillo del cristal */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 via-transparent to-black/45" />
-          <div className="absolute left-[14%] top-[10%] h-[22%] w-[30%] rounded-full bg-white/15 blur-md" />
+          {/* Brillo del cristal: dos reflejos suaves + viñeta */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/22 via-transparent to-black/50" />
+          <div className="absolute left-[12%] top-[8%] h-[24%] w-[34%] rotate-[-18deg] rounded-full bg-white/20 blur-md" />
+          <div className="absolute right-[16%] bottom-[12%] h-[14%] w-[22%] rotate-[-18deg] rounded-full bg-white/10 blur-md" />
 
           {/* Eje central */}
           <div className="absolute left-1/2 top-1/2 z-30 h-[9%] w-[9%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#3d2c12] bg-gradient-to-br from-[#d8c48c] to-[#6e5a2e] shadow" />
@@ -133,20 +150,21 @@ export function Drum({ phase, countdown, flicker, lastNumber = null }: DrumProps
           {/* Etiqueta GIRANDO */}
           {spinning && (
             <div className="absolute inset-0 z-40 flex items-center justify-center">
-              <div className="rounded-lg border-2 border-[#c9a227] bg-black/70 px-5 py-2">
-                <span className="animate-pulse-fast font-rye text-xl tracking-widest text-[#f3d27a] sm:text-3xl">
+              <div className="wood-grain rounded-lg border-2 border-[#c9a227] bg-[linear-gradient(180deg,#3b2314,#1c1208)] px-6 py-2 shadow-[0_0_34px_rgba(201,162,39,.5),0_8px_18px_rgba(0,0,0,.6)]">
+                <span className="animate-pulse-fast font-rye text-xl tracking-widest text-[#f3d27a] drop-shadow-[0_2px_0_rgba(0,0,0,.8)] sm:text-3xl">
                   ¡GIRANDO!
                 </span>
               </div>
             </div>
           )}
+        </div>
       </div>
 
       {/* Patas de madera */}
       <div className="relative mx-auto -mt-2 flex w-[70%] items-start justify-between">
-        <div className="h-10 w-6 skew-x-[14deg] rounded-b bg-gradient-to-b from-[#5c3a21] to-[#33200f] shadow-lg" />
-        <div className="h-8 flex-1 rounded-b-lg border-x-4 border-[#3b2314] bg-gradient-to-b from-[#6b4423] to-[#3b2314] shadow-[0_10px_20px_rgba(0,0,0,.5)]" />
-        <div className="h-10 w-6 -skew-x-[14deg] rounded-b bg-gradient-to-b from-[#5c3a21] to-[#33200f] shadow-lg" />
+        <div className="wood-grain h-10 w-6 skew-x-[14deg] rounded-b bg-gradient-to-b from-[#6b4423] to-[#33200f] shadow-lg" />
+        <div className="wood-grain h-8 flex-1 rounded-b-lg border-x-4 border-[#3b2314] bg-gradient-to-b from-[#7a4e24] to-[#3b2314] shadow-[0_10px_20px_rgba(0,0,0,.5)]" />
+        <div className="wood-grain h-10 w-6 -skew-x-[14deg] rounded-b bg-gradient-to-b from-[#6b4423] to-[#33200f] shadow-lg" />
       </div>
 
       {/* Número parpadeante durante el giro */}

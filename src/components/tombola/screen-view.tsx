@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ListOrdered, RotateCcw, Sparkles, Volume2, VolumeX } from 'lucide-react'
+import { Toggle, ToggleIcon } from '@ui-sdk/react/toggle'
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
+  AlertDialogBackdrop,
+  AlertDialogClose,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@ui-sdk/react/alert-dialog'
 import { useTombola } from '@/hooks/use-tombola'
 import type { Phase } from '@/lib/tombola'
 import { decidePresentation } from '@/lib/tombola-present'
@@ -23,13 +22,13 @@ import { StoreWarning } from '@/components/tombola/store-warning'
 import { MountainRidge, StrategaLogo, Studs } from '@/components/tombola/brand'
 import {
   isAudioReady,
-  isMuted,
   loadMutePreference,
   playClick,
   playFanfare,
   playRoll,
   playSiren,
   playTick,
+  preloadSiren,
   primeAudio,
   setMuted,
 } from '@/lib/sounds'
@@ -71,6 +70,7 @@ export function ScreenView() {
     queueMicrotask(() => setMutedState(loadMutePreference()))
     const intentar = () => {
       primeAudio()
+      preloadSiren()
       // resume() es asíncrono: se revisa un instante después
       window.setTimeout(() => setAudioReady(isAudioReady()), 120)
     }
@@ -100,6 +100,7 @@ export function ScreenView() {
   // Botón para desbloquear el audio desde la pantalla grande (solo si hace falta)
   const activarSonido = () => {
     primeAudio()
+    preloadSiren()
     setMuted(false)
     setMutedState(false)
     playClick()
@@ -273,11 +274,15 @@ export function ScreenView() {
     setLocked((was) => (was ? false : was))
   }, [state.phase])
 
-  const toggleSound = () => {
+  // El interruptor de sonido de la UI SDK entrega el estado nuevo (pressed).
+  const cambiarSonido = (encendido: boolean) => {
     primeAudio()
-    const next = !isMuted()
-    setMuted(next)
-    setMutedState(next)
+    if (encendido) {
+      preloadSiren()
+      playClick()
+    }
+    setMuted(!encendido)
+    setMutedState(!encendido)
   }
 
   const recent = [...state.drawn].reverse().slice(0, 12)
@@ -388,56 +393,51 @@ export function ScreenView() {
               <span className="hidden md:inline">{connected ? 'Tómbola conectada' : 'Reconectando...'}</span>
             </span>
 
-            <button
-              type="button"
-              onClick={toggleSound}
+            <Toggle
+              pressed={!muted}
+              onPressedChange={cambiarSonido}
+              aria-label={muted ? 'Activar el sonido' : 'Silenciar el sonido'}
               className="inline-flex items-center gap-2 rounded-md border-2 border-[#6b4423] bg-[#3b2314] px-3 py-1.5 font-elite text-sm text-[#f3e6c3] shadow transition hover:bg-[#4a2d18] active:scale-95"
-              aria-pressed={!muted}
             >
-              {muted ? (
-                <>
-                  <VolumeX className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Sonido apagado</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Sonido encendido</span>
-                </>
-              )}
-            </button>
+              <ToggleIcon>
+                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </ToggleIcon>
+              <span className="hidden sm:inline">{muted ? 'Sonido apagado' : 'Sonido encendido'}</span>
+            </Toggle>
 
             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-md border-2 border-[#7a2a1a] bg-gradient-to-b from-[#a3271c] to-[#7f1010] px-3 py-1.5 font-elite text-sm font-bold text-[#f3e6c3] shadow transition hover:from-[#b53427] active:scale-95"
-                >
-                  <RotateCcw className="h-4 w-4" aria-hidden="true" /> Nueva Ronda
-                </button>
+              <AlertDialogTrigger className="inline-flex items-center gap-2 rounded-md border-2 border-[#7a2a1a] bg-gradient-to-b from-[#a3271c] to-[#7f1010] px-3 py-1.5 font-elite text-sm font-bold text-[#f3e6c3] shadow transition hover:from-[#b53427] active:scale-95">
+                <RotateCcw className="h-4 w-4" aria-hidden="true" /> Nueva Ronda
               </AlertDialogTrigger>
-              <AlertDialogContent className="border-2 border-[#6b4423] bg-[#f3e6c3] text-[#2b1a0c]">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="font-rye text-xl">¿Barajar de nuevo?</AlertDialogTitle>
-                  <AlertDialogDescription className="font-elite text-[#5a3a1c]">
-                    Se borrará el historial y los 100 números volverán al tambor. Esta acción no se
-                    puede deshacer.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="border-[#6b4423] bg-transparent font-elite text-[#3b2314] hover:bg-[#e0c68f]">
+              <AlertDialogBackdrop className="fixed inset-0 z-[80] bg-black/75" />
+              <AlertDialogContent className="parchment fixed left-1/2 top-1/2 z-[81] w-[min(92vw,480px)] -translate-x-1/2 -translate-y-1/2 rounded-md border-2 border-[#6b4423] p-5 text-[#2b1a0c] shadow-[0_24px_60px_rgba(0,0,0,.6)]">
+                <AlertDialogTitle className="font-rye text-xl">¿Barajar de nuevo?</AlertDialogTitle>
+                <AlertDialogDescription className="mt-2 font-elite text-[#5a3a1c]">
+                  Se borrará el historial y los 100 números volverán al tambor. Esta acción no se
+                  puede deshacer.
+                </AlertDialogDescription>
+                <div className="mt-5 flex justify-end gap-2">
+                  <AlertDialogClose className="rounded-md border-2 border-[#6b4423] bg-transparent px-4 py-2 font-elite text-sm text-[#3b2314] transition hover:bg-[#e0c68f]">
                     Cancelar
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={reset}
-                    className="bg-[#8b1a1a] font-elite text-[#f3e6c3] hover:bg-[#a3271c]"
+                  </AlertDialogClose>
+                  <AlertDialogClose
+                    value="confirm"
+                    action={reset}
+                    className="rounded-md bg-[#8b1a1a] px-4 py-2 font-elite text-sm font-bold text-[#f3e6c3] transition hover:bg-[#a3271c]"
                   >
                     Sí, nueva ronda
-                  </AlertDialogAction>
-                </AlertDialogFooter>
+                  </AlertDialogClose>
+                </div>
               </AlertDialogContent>
             </AlertDialog>
           </div>
         </div>
         <MountainRidge className="pointer-events-none absolute bottom-0 left-0 h-7 w-full opacity-70" />
+        {/* Filo dorado bajo la cabecera */}
+        <span
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#c9a227]/80 to-transparent"
+          aria-hidden="true"
+        />
       </header>
 
       {/* Cuerpo: panel lateral izquierdo + zona central con la tómbola */}
