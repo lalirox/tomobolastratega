@@ -93,9 +93,8 @@ export function playFanfare() {
 }
 
 // ── Sonidos de archivo (mp3) precargados en el AudioContext ──
-// alerta.mp3  → sirena de MANDAR ALERTA
-// jackpot.mp3 → suena al iniciar una tirada (CANTAR NÚMERO)
-const SIREN_URL = '/sonidos/alerta.mp3'
+// jackpot.mp3 → suena al iniciar una tirada (CANTAR NÚMERO).
+// La ALERTA vuelve a ser la sirena sintetizada original (más fuerte).
 const JACKPOT_URL = '/sonidos/jackpot.mp3'
 
 const buffers = new Map<string, AudioBuffer>()
@@ -113,7 +112,7 @@ function loadSound(url: string): Promise<void> {
       buffers.set(url, buf)
     })
     .catch(() => {
-      // si falla, se usa el sintetizado de respaldo
+      // si falla, no suena
     })
     .finally(() => {
       loading.delete(url)
@@ -122,9 +121,8 @@ function loadSound(url: string): Promise<void> {
   return p
 }
 
-/** Precarga los sonidos de archivo (llamar tras desbloquear el audio) */
+/** Precarga el sonido de jackpot (llamar tras desbloquear el audio) */
 export function preloadSounds(): void {
-  void loadSound(SIREN_URL)
   void loadSound(JACKPOT_URL)
 }
 
@@ -149,14 +147,6 @@ function playBuffer(url: string, gain = 1): boolean {
   }
 }
 
-// Sirena de alerta (archivo real; respaldo sintetizado)
-export function playSiren() {
-  if (!ctx || muted) return
-  if (ctx.state === 'suspended') void ctx.resume()
-  if (playBuffer(SIREN_URL, 1)) return
-  playSynthSiren()
-}
-
 // Sonido de jackpot: suena al iniciar una tirada (CANTAR NÚMERO)
 export function playJackpot() {
   if (!ctx || muted) return
@@ -164,8 +154,9 @@ export function playJackpot() {
   playBuffer(JACKPOT_URL, 1)
 }
 
-// Respaldo sintetizado: barrido sube-baja de 3 ciclos
-function playSynthSiren() {
+// Sirena de alerta ORIGINAL: barrido sube-baja de 3 ciclos, sintetizado.
+// Ganancia alta a propósito: tiene que cortar el ruido de la fiesta.
+export function playSiren() {
   if (!ctx || muted) return
   try {
     const t0 = ctx.currentTime
